@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function hasMe() { return signed() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return signed() && (request.auth.token.email == 'admin@attheapex.co.kr' || (hasMe() && me().role == 'admin' && me().active != false)); }
+    function isStaff() { return isAdmin() || (hasMe() && me().role == 'teacher' && me().active != false); }
+    function isMember() { return hasMe() && me().active != false; }
+    function mySid() { return me().sid; }
+    function ownRead() { return isMember() && resource.data.sid == mySid(); }
+    function ownWrite() { return isMember() && request.resource.data.sid == mySid(); }
+
+    // 계정
+    match /users/{uid} {
+      allow read: if signed() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+    // 홈페이지에 보이는 정보
+    match /classes/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /teachers/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /notices/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id} { allow read: if true; allow write: if isAdmin(); }
+    // 상담 신청: 누구나 접수, 관리부만 확인
+    match /consults/{id} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone']) && request.resource.data.done == false;
+      allow read, update, delete: if isAdmin();
+    }
+    // 수업 자료
+    match /videos/{id}   { allow read: if isMember(); allow write: if isStaff(); }
+    match /homework/{id} { allow read: if isMember(); allow write: if isStaff(); }
+    // 학생 정보: 직원 전체, 학생·학부모는 본인(자녀)만
+    match /students/{id} {
+      allow read: if isStaff() || (isMember() && mySid() == id);
+      allow write: if isAdmin();
+    }
+    match /progress/{id} {
+      allow read: if isStaff() || ownRead();
+      allow write: if isStaff() || ownWrite();
+    }
+    match /attendance/{id} {
+      allow read: if isStaff() || ownRead();
+      allow create, update: if isStaff() || ownWrite();
+      allow delete: if isStaff();
+    }
+    match /reports/{id} {
+      allow read: if isStaff() || ownRead();
+      allow create, delete: if isStaff();
+      allow update: if isStaff() || (ownRead() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments']));
+    }
+    match /absences/{id} {
+      allow read: if isStaff() || ownRead();
+      allow create: if isStaff() || (ownWrite() && me().role == 'parent');
+      allow update, delete: if isStaff();
+    }
+    // 관리부 전용
+    match /schedule/{id} { allow read, write: if isStaff(); }
+    match /daily/{id}    { allow read, write: if isStaff(); }
+    match /surveys/{id}  { allow read, write: if isStaff(); }
+  }
+}

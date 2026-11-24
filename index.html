@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>에이펙스영어학원</title>
+<title>에이펙스영어학원 | 평촌학원가 영어학원</title>
+<meta name="description" content="평촌학원가 에이펙스영어학원 · 초등 · 중등 · 고등 · 외고 · 상담 010-5514-0374">
 <link rel="icon" href="img/mark-black.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Gothic+A1:wght@500;700;800&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
-:root{--bg:#F7F6FB;--bg2:#F0EEF8;--card:#fff;--pri:#24408E;--pri-soft:#4A66B8;--gold:#F5C518;--gold-dim:#E0B010;--on-gold:#1C2547;--txt:#1A2138;--muted:#646B86;--border:rgba(36,64,142,.16);--bs:rgba(26,33,56,.08);--ok:#2E9E5B;--bad:#D64545;--side-w:236px;--top-h:64px;--bar-h:44px}
+:root{--bg:#F7F6FB;--bg2:#F0EEF8;--card:#fff;--pri:#24408E;--pri-soft:#4A66B8;--gold:#F5C518;--gold-dim:#E0B010;--on-gold:#1C2547;--txt:#1A2138;--muted:#646B86;--border:rgba(36,64,142,.16);--bs:rgba(26,33,56,.08);--ok:#2E9E5B;--bad:#D64545;--side-w:236px;--top-h:64px;--bar-h:0px}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--txt);line-height:1.7;font-size:14px;min-height:100vh;word-break:keep-all;overflow-wrap:break-word}
@@ -545,11 +546,26 @@ body.th-A .stat{border-top:3px solid var(--gold)}
 .stat b{font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
 .wk .d.today{background:var(--acc-soft);box-shadow:none;animation:none;border:1.5px solid var(--gold)}
-.demobar .lb,#tiers,#themes,#appsw,.dm-help{display:none!important}
+.demobar,#phone{display:none!important}
 .logo-img{height:32px;width:auto;display:block;flex-shrink:0}
 .hp-logo img{height:38px;width:auto;display:block}
 .hp-foot .flogo{display:block;width:88px;height:auto;margin-bottom:14px}
+.nav-who{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.nav-who b{font-size:13.5px}
+.nav-home{display:none}
+.vwrap{position:relative;padding-top:56.25%;background:#000;border-radius:10px;overflow:hidden}
+.vwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.mmap{display:block;width:100%;height:auto;border-radius:6px;border:1px solid var(--hp-line)}
+.hp-map .addr{margin:12px 0 4px;font-weight:700}
+.hp-map a{color:var(--hp-strong);font-weight:700;font-size:13.5px;text-decoration:none}
+.consult-top{padding-top:44px}
+.ad-who b{display:block;color:#fff;font-size:15px;margin-top:4px}
+.consult-top .hp-form{max-width:none;margin:0}
+@media(max-width:700px){.nav-who b{display:none}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="demobar"><button class="dm-help" data-act="guide">❓ 사용법</button><span class="lb">단계</span><div class="tiers" id="tiers"></div><span class="lb">디자인</span><div class="tiers dm-theme" id="themes"></div><span class="lb">화면</span><div class="dm-roles" id="roles"></div><div class="appsw" id="appsw"></div><button class="ghost" data-act="reset">초기화</button></div>
@@ -595,7 +611,8 @@ const MENUS={
 };
 
 ROLES.splice(0,ROLES.length,...ROLES.filter(r=>r.t<=3&&r.id!=='price'));
-for(const k in MENUS)MENUS[k]=MENUS[k].filter(m=>m.t<=3);
+for(const k in MENUS)MENUS[k]=MENUS[k].filter(m=>m.t<=3&&m.id!=='avisit');
+MENUS.admin.splice(MENUS.admin.findIndex(m=>m.id==='astudents'),0,{id:'aaccounts',n:'계정 관리',t:1,g:'학생 · 영상'},{id:'aclasses',n:'반 · 공지 관리',t:1,g:'학생 · 영상'});
 /* ===== 요금 가안 ===== */
 const PSUB={1:'학원 홈페이지',2:'영상 강의실',3:'학원 관리',4:'원장 운영 자동화'};
 const PFEAT={
@@ -615,62 +632,108 @@ const FEATURES=[
 function S(id,name,grade,cid,app,kakao,code){const n=parseInt(id.slice(1));return {id,name,grade,cid,parentApp:app,kakao,code,active:true,phone:`010-${2000+n*311}-${4000+n*517}`}}
 function V(id,title,cids,dur,by,teacherOnly){return {id,title,classIds:cids,dur,by,teacherOnly:!!teacherOnly,chapters:[{t:0,l:'개념 정리'},{t:Math.round(dur*.22),l:'예문 분석'},{t:Math.round(dur*.45),l:'문제 1-1'},{t:Math.round(dur*.62),l:'문제 1-2'},{t:Math.round(dur*.8),l:'문제 2-1'},{t:Math.round(dur*.92),l:'마무리 정리'}]}}
 function seed(){
-  return {
-    v:1,tier:1,app:true,role:'home',hp:'A',guided:false,menu:{},branch:'전체',phone:[],phoneOpen:true,showLeft:false,absDraft:[],
-    sel:{student:'s1',parent:'s1',teacher:'t1'},
-    teachers:[{id:'t1',name:'이수진T',branch:'본관'},{id:'t2',name:'박민호T',branch:'2관'}],
-    classes:[
-      {id:'c1',name:'중2 문법반',branch:'본관',days:'월수금',tid:'t1'},
-      {id:'c2',name:'중3 독해반',branch:'본관',days:'화목',tid:'t1'},
-      {id:'c3',name:'고1 수능독해반',branch:'2관',days:'월수금',tid:'t2'},
-      {id:'c4',name:'고2 내신반',branch:'2관',days:'화목',tid:'t2'}],
-    students:[
-      S('s1','김서연','중2','c1',true,true,'1234'),S('s2','이도윤','중2','c1',false,true,'2345'),S('s3','박하은','중2','c1',true,true,'3456'),
-      S('s4','최준우','중3','c2',false,false,'4567'),S('s5','정유나','중3','c2',true,true,'5678'),
-      S('s6','강민재','고1','c3',true,true,'6789'),S('s7','윤지아','고1','c3',false,false,'7890'),
-      S('s8','임태윤','고2','c4',true,true,'8901'),S('s9','한소율','고2','c4',false,true,'9012'),S('s10','오지훈','고2','c4',true,true,'1122')],
-    videos:[
-      V('v1','중2 문법 1강 · 현재완료',['c1'],480,'이수진T'),V('v2','중2 문법 2강 · 수동태',['c1'],540,'이수진T'),
-      V('v3','중3 독해 · 글의 주제 찾기',['c2'],600,'이수진T'),V('v4','고1 수능독해 · 빈칸 추론 1',['c3'],720,'박민호T'),
-      V('v5','고1 수능독해 · 빈칸 추론 2',['c3'],660,'박민호T'),V('v6','고2 내신 · 3과 본문 분석',['c4'],780,'박민호T'),
-      V('v7','[선생님 전용] 수업 운영 안내',[],300,'관리부',true)],
-    progress:{'s1|v1':{max:480,done:true},'s1|v2':{max:190,done:false},'s2|v1':{max:120,done:false},'s3|v1':{max:480,done:true},'s6|v4':{max:720,done:true},'s7|v4':{max:300,done:false},'s8|v6':{max:410,done:false}},
-    attendance:{[TODAY]:{s1:{st:'출석',in:'17:52',out:''},s6:{st:'출석',in:'17:48',out:''}}},
-    homework:[
-      {id:'h1',date:TODAY,cid:'c1',text:'문법 워크북 24~27쪽, 단어 50개 암기',by:'이수진T'},
-      {id:'h2',date:addDays(-2),cid:'c1',text:'현재완료 문제 20개',by:'이수진T'},
-      {id:'h3',date:addDays(-1),cid:'c4',text:'3과 본문 해석 노트 정리',by:'박민호T'},
-      {id:'h4',date:addDays(-1),cid:'c2',text:'주제 찾기 지문 5개',by:'이수진T'}],
-    reports:[
-      {id:'r1',type:'주간성취도',sid:'s1',tid:'t1',date:addDays(-1),u:5,h:4,text:'현재완료 개념을 정확히 이해했고 단어 시험 48/50점입니다. 수동태도 잘 따라올 것 같아요.',status:'공개',comments:[{by:'학부모',text:'단어 시험 잘 봤다고 하네요. 감사합니다!',time:'어제 21:10'},{by:'이수진T',text:'다음 주 수동태도 잘 따라올 거예요!',time:'오늘 09:30'}]},
-      {id:'r2',type:'주간성취도',sid:'s2',tid:'t1',date:TODAY,u:3,h:3,text:'숙제는 성실하나 현재완료 부정문에서 실수가 잦습니다. 보충 영상 시청을 권합니다.',status:'승인 대기',comments:[]},
-      {id:'r3',type:'월말보고서',sid:'s6',tid:'t2',date:addDays(-11),u:4,h:5,text:'10월 빈칸 추론 정답률이 62%에서 81%로 올랐습니다. 11월은 순서 배열 유형을 집중합니다.',status:'공개',comments:[{by:'학부모',text:'다음 달 목표도 알려주세요.',time:'11/02 20:14'}]}],
-    absences:[{id:'a1',sid:'s3',dates:[addDays(1)],reason:'가족 행사로 결석합니다. 보충 수업 가능할까요?',status:'접수',reply:'',time:'오늘 08:40'}],
-    consults:[
-      {id:'q1',name:'정민지',phone:'010-2345-6789',grade:'중1',msg:'겨울방학 특강 문의드립니다.',time:'어제 19:20',done:false},
-      {id:'q2',name:'류성호',phone:'010-9876-5432',grade:'고1',msg:'수능 독해반 레벨 테스트 가능할까요?',time:'오늘 10:05',done:true}],
-    popup:{on:true,title:'겨울방학 특강 모집',text:'12월 22일 개강\n중등 문법 완성반 · 고등 수능 독해 집중반\n선착순으로 마감됩니다.'},
-    notices:[{title:'11월 학부모 설명회 안내',text:'11월 22일(토) 오후 2시, 본관 3층 세미나실',date:addDays(-3)}],
-    schedule:[
-      {id:'e1',date:TODAY,branch:'2관',kind:'회의',time:'13:00',text:'고등부 강사 회의'},
-      {id:'e2',date:addDays(1),branch:'본관',kind:'상담',time:'15:00',text:'중2 신규 상담'},
-      {id:'e3',date:addDays(2),branch:'2관',kind:'상담',time:'17:00',text:'고1 레벨 테스트'}],
-    daily:{},surveys:[{name:'정민지 학부모',grade:'중1',type:'관리 필요형',focus:'단어·문법',time:'어제 19:40'}],
-    visitsToday:87,
-  };
+  return {v:1,tier:3,app:true,role:'home',hp:'A',guided:true,menu:{},branch:'전체',phone:[],phoneOpen:false,showLeft:false,absDraft:[],
+    sel:{student:'',parent:'',teacher:''},teachers:[],classes:[],students:[],videos:[],progress:{},attendance:{},homework:[],reports:[],absences:[],consults:[],
+    popup:{on:false,title:'',text:''},notices:[],schedule:[],daily:{},surveys:[],users:[],visitsToday:0};
 }
-let st;
-const KEY='apexPro_v1';
-try{const j=JSON.parse(localStorage.getItem(KEY));if(j&&j.v===1)st=j}catch(e){}
-if(st&&!st.hp)st.hp='A';
-if(!st)st=seed();
-st.tier=3;st.hp='A';
-function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+
+/* ===== 파이어베이스 연결 ===== */
+const FB_CFG={apiKey:"AIzaSyBpoblbNvzMA4-tilBfdfn65yK4RgUUmfo",authDomain:"attheapex-aaf07.firebaseapp.com",projectId:"attheapex-aaf07",storageBucket:"attheapex-aaf07.firebasestorage.app",messagingSenderId:"4641516947",appId:"1:4641516947:web:68a285322b0dd4b1a84c66"};
+firebase.initializeApp(FB_CFG);
+const AUTH=firebase.auth(),DB=firebase.firestore();
+const ID_DOMAIN='attheapex.co.kr',ADMIN_EMAIL='admin@attheapex.co.kr';
+const idEmail=id=>String(id).trim().toLowerCase()+'@'+ID_DOMAIN;
+let ME=null,AUTH_READY=false;
+const KEY='apexLive_v1';
+let st=seed();
+try{const j=JSON.parse(localStorage.getItem(KEY));if(j){st.menu=j.menu||{};st.showLeft=!!j.showLeft}}catch(e){}
+st.tier=3;st.hp='A';st.guided=true;
+
+const ARR=['teachers','classes','students','videos','homework','reports','absences','notices','schedule','surveys'];
+const ALLC=[...ARR,'progress','attendance','daily','settings'];
+let SH={},LOADED={},UNSUB=[];
+function sj(v){if(Array.isArray(v))return '['+v.map(sj).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+sj(v[k])).join(',')+'}';return JSON.stringify(v===undefined?null:v)}
+function docsOf(c){const o={};
+  if(c==='progress')Object.entries(st.progress).forEach(([k,v])=>{o[k.replace('|','_')]={...v,key:k,sid:k.split('|')[0]}});
+  else if(c==='attendance')Object.entries(st.attendance).forEach(([d,m])=>Object.entries(m||{}).forEach(([sid,v])=>{o[d+'_'+sid]={...v,date:d,sid}}));
+  else if(c==='daily')Object.entries(st.daily).forEach(([k,v])=>{o[k.replace('|','_')]={...v,key:k}});
+  else if(c==='settings')o.site={popup:st.popup};
+  else (st[c]||[]).forEach(x=>{if(!x.id)x.id=nid(c.slice(0,2));o[x.id]=x});
+  return o}
+const TS=x=>x.ts||0;
+function fromDocs(c,docs){
+  if(c==='progress'){st.progress={};docs.forEach(d=>{const {key,sid,...r}=d.data;if(key)st.progress[key]=r})}
+  else if(c==='attendance'){st.attendance={};docs.forEach(d=>{const {date,sid,...r}=d.data;if(date&&sid)(st.attendance[date]=st.attendance[date]||{})[sid]=r})}
+  else if(c==='daily'){st.daily={};docs.forEach(d=>{const {key,...r}=d.data;if(key)st.daily[key]=r})}
+  else if(c==='settings'){const s=docs.find(d=>d.id==='site');st.popup=(s&&s.data.popup)||{on:false,title:'',text:''}}
+  else{st[c]=docs.map(d=>({...d.data,id:d.id}));
+    if(['consults','absences','surveys'].includes(c))st[c].sort((a,b)=>TS(b)-TS(a));
+    if(c==='notices')st[c].sort((a,b)=>String(b.date).localeCompare(String(a.date))||TS(b)-TS(a));}
+  SH[c]={};const cur=docsOf(c);for(const id in cur)SH[c][id]=sj(cur[id]);
+}
+function clean(o){return JSON.parse(JSON.stringify(o))}
+function flush(){
+  ALLC.forEach(c=>{if(!LOADED[c])return;const cur=docsOf(c),sh=SH[c]||(SH[c]={});
+    for(const id in cur){const j=sj(cur[id]);if(sh[id]!==j){sh[id]=j;DB.collection(c).doc(id).set(clean(cur[id])).catch(e=>{console.error(c,id,e);toast('저장하지 못했어요 · 권한을 확인해 주세요')})}}
+    for(const id in sh)if(!(id in cur)){delete sh[id];DB.collection(c).doc(id).delete().catch(e=>{console.error(c,id,e);toast('지우지 못했어요 · 권한을 확인해 주세요')})}
+  });
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({menu:st.menu,showLeft:st.showLeft}))}catch(e){}flush()}
+let RT=null,PEND=false,FIRST_SETTINGS=true;
+function later(){clearTimeout(RT);RT=setTimeout(()=>{const a=document.activeElement;if(a&&a.closest&&a.closest('#view')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){PEND=true;return}render()},150)}
+document.addEventListener('focusout',()=>{if(PEND){PEND=false;setTimeout(later,80)}});
+function sub(c,q){LOADED[c]=false;UNSUB.push(q.onSnapshot(s=>{fromDocs(c,s.docs.map(d=>({id:d.id,data:d.data()})));LOADED[c]=true;
+  if(c==='settings'&&FIRST_SETTINGS){FIRST_SETTINGS=false;if(st.role==='home')setTimeout(()=>onEnterRole('home'),300)}
+  later()},e=>{console.warn('읽기 실패',c,e.code);LOADED[c]=false}))}
+function resetData(){const s=seed();ARR.forEach(c=>st[c]=s[c]);st.consults=[];st.users=[];st.progress={};st.attendance={};st.daily={};SH={}}
+function startSubs(){UNSUB.forEach(u=>u());UNSUB=[];LOADED={};
+  ['classes','teachers','notices','settings'].forEach(c=>sub(c,DB.collection(c)));
+  if(!ME)return;
+  const r=ME.role;
+  if(r==='admin'||r==='teacher')['students','videos','homework','reports','absences','progress','attendance','schedule','daily','surveys'].forEach(c=>sub(c,DB.collection(c)));
+  if(r==='admin'){
+    UNSUB.push(DB.collection('consults').onSnapshot(s=>{st.consults=s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>TS(b)-TS(a));later()},e=>console.warn('consults',e.code)));
+    UNSUB.push(DB.collection('users').onSnapshot(s=>{st.users=s.docs.map(d=>({...d.data(),id:d.id}));later()},e=>console.warn('users',e.code)));
+  }
+  if(r==='student'||r==='parent'){const sid=ME.sid||'-';
+    UNSUB.push(DB.collection('students').doc(sid).onSnapshot(d=>{st.students=d.exists?[{...d.data(),id:d.id}]:[];SH.students={};st.students.forEach(x=>SH.students[x.id]=sj(x));later()},e=>console.warn('students',e.code)));
+    sub('videos',DB.collection('videos'));sub('homework',DB.collection('homework'));
+    ['progress','attendance','reports','absences'].forEach(c=>sub(c,DB.collection(c).where('sid','==',sid)));
+  }
+}
+AUTH.onAuthStateChanged(async u=>{
+  AUTH_READY=true;
+  if(!u){ME=null;resetData();startSubs();if(st.role!=='home'){st.role='home';ENTER=ENTER_ROLE=true}render();return}
+  try{
+    const ref=DB.collection('users').doc(u.uid);let d=await ref.get();
+    if(!d.exists&&u.email===ADMIN_EMAIL){await ref.set({role:'admin',name:'관리자',loginId:'admin',active:true,created:Date.now()});d=await ref.get()}
+    if(!d.exists||d.data().active===false){toast('사용할 수 없는 계정이에요 · 학원에 문의해 주세요');await AUTH.signOut();return}
+    ME={uid:u.uid,...d.data()};
+    if(ME.role==='teacher')st.sel.teacher=ME.tid||u.uid;
+    if(ME.role==='student')st.sel.student=ME.sid;
+    if(ME.role==='parent')st.sel.parent=ME.sid;
+    resetData();startSubs();
+    if(GO_ROLE){GO_ROLE=false;st.role=ME.role;ENTER=ENTER_ROLE=true;setTimeout(()=>onEnterRole(ME.role),1500)}
+    render();
+  }catch(e){console.error(e);toast('로그인 정보를 불러오지 못했어요')}
+});
+let GO_ROLE=false;
+async function makeAuthUser(id,pw){
+  const app2=firebase.apps.find(a=>a.name==='maker')||firebase.initializeApp(FB_CFG,'maker');
+  const a2=app2.auth();await a2.setPersistence(firebase.auth.Auth.Persistence.NONE);
+  const c=await a2.createUserWithEmailAndPassword(idEmail(id),pw);const uid=c.user.uid;await a2.signOut();return uid}
+const stamp=()=>{const d=new Date();return `${d.getMonth()+1}/${d.getDate()} ${now()}`};
+
+/* 영상 주소 */
+function vimeoOf(u){u=String(u||'');let m=u.match(/player\.vimeo\.com\/video\/(\d+)(?:\?h=([0-9a-z]+))?/i)||u.match(/vimeo\.com\/(?:.*\/)?(\d+)(?:\/([0-9a-z]+))?/i);return m?{id:m[1],h:m[2]||''}:null}
+function ytOf(u){u=String(u||'');const m=u.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:null}
+let VMP=null;function loadVimeo(){return VMP||(VMP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://player.vimeo.com/api/player.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)}))}
+
 
 /* ===== 공용 함수 ===== */
-const stu=id=>st.students.find(s=>s.id===id);
-const cls=id=>st.classes.find(c=>c.id===id);
-const tch=id=>st.teachers.find(t=>t.id===id);
+const stu=id=>st.students.find(s=>s.id===id)||{id,name:'(학생 정보 없음)',grade:'',cid:'',code:'',active:false};
+const cls=id=>st.classes.find(c=>c.id===id)||{id,name:'(반 없음)',branch:'',days:'',tid:''};
+const tch=id=>st.teachers.find(t=>t.id===id)||{id,name:'(선생님 없음)',branch:''};
 const act=()=>st.students.filter(s=>s.active);
 const brOf=s=>cls(s.cid).branch;
 const inBr=b=>st.tier<4||st.branch==='전체'||b===st.branch;
@@ -678,15 +741,15 @@ const todayClasses=()=>{const c=st.classes.filter(c=>c.days.includes(TODAYDOW));
 const noClassToday=()=>!st.classes.some(c=>c.days.includes(TODAYDOW));
 const attOf=(sid,date=TODAY)=>(st.attendance[date]||{})[sid];
 const setAtt=(sid,patch,date=TODAY)=>{st.attendance[date]=st.attendance[date]||{};st.attendance[date][sid]={...(st.attendance[date][sid]||{}),...patch}};
-const appOn=()=>st.tier>=4||(st.tier>=2&&st.app);
-function selStu(role){let s=stu(st.sel[role]);if(!s||!s.active){s=act()[0];st.sel[role]=s.id}return s}
+const appOn=()=>false;
+function selStu(role){let s=st.students.find(x=>x.id===st.sel[role]);if(!s&&!(ME&&(ME.role==='student'||ME.role==='parent'))){s=act()[0];if(s)st.sel[role]=s.id}return s||stu(st.sel[role]||'-')}
 const selT=()=>tch(st.sel.teacher);
 const tCls=()=>st.classes.filter(c=>c.tid===st.sel.teacher);
 const hint=t=>'';
 const stat=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
 const stPill=s=>s==='출석'?'<span class="pill ok">출석</span>':s==='지각'?'<span class="pill warn">지각</span>':s==='결석'?'<span class="pill bad">결석</span>':'<span class="pill">미체크</span>';
 const lockScreen=(t,name)=>`<div class="lock"><div class="ic">🔒</div><h2>${esc(name)}</h2><p class="desc">이 기능은 <b style="color:${TIERS[t].c}">${TIERS[t].n}</b> 단계부터 제공됩니다.</p><button class="btn" style="background:${TIERS[t].c}" data-act="tier" data-v="${t}">${TIERS[t].n}로 바꿔서 보기</button></div>`;
-const todayNote=()=>noClassToday()?'<span class="pill warn">오늘은 수업 요일이 아니라 시연용으로 전체 반을 보여줘요</span>':'';
+const todayNote=()=>noClassToday()?'<span class="pill">오늘은 수업 요일이 아니라 전체 반을 보여줘요</span>':'';
 
 function toast(m){const box=$('#toast');while(box.children.length>=2)box.firstChild.remove();const d=document.createElement('div');d.className='toastmsg';d.textContent=m;$('#toast').appendChild(d);setTimeout(()=>d.remove(),3400)}
 function modal(html,wide){$('#modal').innerHTML=`<div class="mb" data-act="mclosebg"><div class="md ${wide?'wide':''}"><button class="x" data-act="mclose">×</button>${html}</div></div>`}
@@ -694,7 +757,7 @@ function closeModal(){plStop();PL=null;$('#modal').innerHTML='';render()}
 
 /* 학부모 휴대폰 알림 */
 const CH={app:{n:'에이펙스 앱',c:'var(--pri)',i:'A'},kakao:{n:'카카오톡 알림톡',c:'#e0b400',i:'톡'},sms:{n:'문자',c:'#16a34a',i:'문자'}};
-function sendParent(sid,title,body,silent){
+function sendParent(sid,title,body,silent){return null;
   if(st.tier<3)return null;
   const s=stu(sid);let ch=null;
   if(appOn()&&s.parentApp)ch='app';
@@ -747,7 +810,7 @@ function renderHeader(){
   $('#toptitle').textContent=TT[st.role]||'';
   document.body.classList.toggle('on-home',st.role==='home');
   const WHO={home:'',student:()=>selStu('student').name+' 학생 로그인',parent:()=>selStu('parent').name+' 학부모 로그인',teacher:()=>selT().name+' 로그인',admin:'관리부 로그인',director:'원장 로그인',price:''};
-  const w=WHO[st.role];$('#navwho').textContent=typeof w==='function'&&st.tier>=(ROLES.find(x=>x.id===st.role).t)?w():(typeof w==='string'?w:'');
+  $('#navwho').innerHTML=ME?`<b>${esc(ME.name||'')}</b><button class="btn sm line" data-act="role" data-v="home">홈페이지</button><button class="btn sm line" data-act="pwchange">비밀번호 변경</button><button class="btn sm" data-act="logout">로그아웃</button>`:'';
 }
 let ENTER=true,ENTER_ROLE=true;
 function render(){
@@ -766,7 +829,7 @@ function render(){
   ENTER=false;ENTER_ROLE=false;
   renderPhone();save();
 }
-function whoSelect(role){
+function whoSelect(role){if(true)return ME?`<div class="ad-who"><label>로그인</label><b>${esc(ME.name||'')}</b></div>`:'';
   if(role==='student'||role==='parent'){selStu(role);return `<div class="ad-who"><label>${role==='student'?'로그인한 학생':'자녀 선택'}</label><select data-chg="sel" data-k="${role}">${act().map(s=>`<option value="${s.id}" ${st.sel[role]===s.id?'selected':''}>${s.name} (${s.grade})</option>`).join('')}</select></div>`}
   if(role==='teacher')return `<div class="ad-who"><label>로그인한 선생님</label><select data-chg="sel" data-k="teacher">${st.teachers.map(t=>`<option value="${t.id}" ${st.sel.teacher===t.id?'selected':''}>${t.name} (${t.branch})</option>`).join('')}</select></div>`;
   if(st.tier>=4)return `<div class="ad-who"><label>관 선택</label><select data-chg="branch">${['전체','본관','2관'].map(b=>`<option ${st.branch===b?'selected':''}>${b}</option>`).join('')}</select></div>`;
@@ -781,7 +844,7 @@ function viewRole(){
   let g='',items='';
   menus.forEach(x=>{if(x.g!==g){g=x.g;items+=`<div class="ad-gh">${g}</div>`}items+=`<button class="ad-item ${x.id===cur?'on':''} ${st.tier<x.t?'locked':''}" data-act="menu" data-v="${x.id}"><span>${st.tier<x.t?'🔒 ':''}${x.n}</span>${st.tier<x.t?tb(x.t):''}</button>`});
   const side=`<div class="ad-backdrop" data-act="side"></div><aside class="ad-side">${whoSelect(role)}<div class="ad-groups">${items}</div><div class="ad-side-foot"><span>${R.n} 페이지</span><span class="role">${TIERS[st.tier].n}</span></div></aside>`;
-  const body=st.tier<m.t?lockScreen(m.t,m.n):VIEWS[cur]();
+  let body;try{body=VIEWS[cur]()}catch(e){console.error(e);body=`<h2>${esc(m.n)}</h2><div class="card empty">아직 등록된 내용이 없어요</div>`}
   return `${side}<main class="ad-main"><div class="inner"><div class="ad-crumb"><span>${R.n}</span><span class="sep">›</span><span>${m.g}</span><span class="sep">›</span><span class="now">${m.n}</span></div>${body}</div></main>`;
 }
 
@@ -792,13 +855,13 @@ function viewHome(){
   const Q=[
     ['학원소개','레벨별 소수 정예 수업과 꼼꼼한 관리','scrollto','about','<path d="M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5"/>'],
     ['동영상강의','수업 후 영상으로 복습하세요','hpvideo','','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>'],
-    ['공지사항',(st.popup.on?st.popup.title:st.notices[0].title)+' 안내','scrollto','notice','<path d="M4 10v4h3l5 4V6L7 10H4zM16 9a4 4 0 0 1 0 6"/>'],
+    ['공지사항',(st.popup.on&&st.popup.title?st.popup.title:(st.notices[0]?st.notices[0].title:'학원 소식'))+' 안내','scrollto','notice','<path d="M4 10v4h3l5 4V6L7 10H4zM16 9a4 4 0 0 1 0 6"/>'],
     ['상담신청','남겨 주시면 바로 연락드립니다','scrollto','consultSec','<path d="M4 5h16v11H8l-4 4zM9 10h6"/>']];
   const nav=Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}">${q[0]}</button>`).join('');
-  const login=`<button class="hp-login" data-act="hpvideo">${st.tier>=2?'강의실 로그인':'로그인'}</button>`;
+  const login=`<button class="hp-login" data-act="hpvideo">${ME?'내 페이지':'로그인'}</button>`;
   const head=`<header class="hp-head"><div class="hp-wrap hp-bar"><button class="hp-logo" data-act="scrollto" data-v="hpTop"><img src="img/mark-black.png" alt=""><b>${NAME}</b></button><nav class="hp-nav">${nav}</nav>${login}</div></header>`;
   const cta=`<div class="cta"><button class="hp-btn" data-act="hpvideo">${V==='B'?'온라인 강의실 로그인':'강의실 로그인'}</button><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
-  const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices,{title:'온라인 강의실 오픈 안내',text:'로그인하면 내 반 영상 강의를 볼 수 있어요.',date:addDays(-6)},{title:'2학기 기말고사 대비 일정',text:'학교별 내신 대비 일정입니다.',date:addDays(-12)}].slice(0,4);
+  const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
   let hero;
   if(V==='A')hero=`<section class="hA" id="hpTop">${chalk()}<div class="hp-wrap hA-in"><div><span class="kick">기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}</div>
     <div class="quick"><div class="quick-h">바로가기</div>${Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}"><b>${q[0]}</b><small>${esc(q[1])}</small><span class="arr">→</span></button>`).join('')}</div></div></section>`;
@@ -810,27 +873,30 @@ function viewHome(){
   const side=V==='C'?`<aside class="cside"><div class="bar"></div><button class="nm" data-act="scrollto" data-v="hpTop">${NAME}</button><div class="en">ENGLISH ACADEMY</div><div class="nv">${nav}</div><div class="ft">본관 <b>031-123-4567</b><br>2관 <b>031-765-4321</b><button class="hp-btn" data-act="hpvideo">강의실 로그인</button></div></aside>`:'';
   const GR=['linear-gradient(135deg,#34433c,#1b2420)','linear-gradient(135deg,#4d3f36,#231b16)','linear-gradient(135deg,#3b4258,#1a1e2b)','linear-gradient(135deg,#3c4a33,#1d2418)'];
   const W=['Grammar','Reading','Blank','Text'];
-  const courses=st.classes.map((c,i)=>{const n=st.videos.filter(v=>v.classIds.includes(c.id)&&!v.teacherOnly).length;return `<button class="course" data-act="hpvideo"><div class="th" style="background:${GR[i%4]}"><span class="bd">${c.branch} · ${c.name.slice(0,2)}</span><div class="t">${esc(c.name)}</div><span class="w">${W[i%4]}</span></div><div class="bd2"><b>${esc(c.name)}</b><small>${esc(tch(c.tid).name)} · ${n}강</small></div></button>`}).join('');
+  const courses=st.classes.map((c,i)=>{const n=st.videos.filter(v=>v.classIds.includes(c.id)&&!v.teacherOnly).length;return `<button class="course" data-act="hpvideo"><div class="th" style="background:${GR[i%4]}"><span class="bd">${c.name.slice(0,2)}</span><div class="t">${esc(c.name)}</div><span class="w">${W[i%4]}</span></div><div class="bd2"><b>${esc(c.name)}</b><small>${esc(tch(c.tid).name)} · ${n}강</small></div></button>`}).join('');
   const body=`
-  <section class="hp-sec" id="notice"><div class="hp-wrap"><div class="hp-two">
-    <div class="hp-box"><h2 class="hp-h2">공지사항<button data-act="scrollto" data-v="notice">${V==='C'?'전체':'더보기'}</button></h2><div class="nl">${notices.map((n,i)=>`<button data-act="hpnotice" data-v="${i}"><span>${esc(n.title)}</span><time>${n.date}</time></button>`).join('')}</div></div>
-    <div class="hp-box dark"><h2 class="hp-h2">${V==='C'?'상담 문의':'상담 안내'}</h2><div class="tel"><small>본관</small>031-123-4567</div><div class="tel"><small>2관</small>031-765-4321</div><div class="hours">월–금 14:00–22:00 · 토 10:00–18:00 상담 가능</div><button class="hp-btn" data-act="scrollto" data-v="consultSec">온라인 상담 신청</button></div>
+  <section class="hp-sec consult-top" id="consultSec"><div class="hp-wrap"><div class="hp-two">
+    <div><h2 class="hp-h2">상담 신청</h2>
+    <form class="hp-form" data-form="consult"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required placeholder="홍길동"></div><div class="f"><label>연락처</label><input name="phone" required placeholder="010-0000-0000"></div></div>
+      <div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div>
+      <div class="f"><label>문의 내용</label><textarea name="msg" placeholder="다니는 학교, 궁금한 점을 적어 주세요"></textarea></div>
+      <button class="hp-btn" style="width:100%">상담 신청하기</button></form></div>
+    <div class="hp-box dark"><h2 class="hp-h2">상담 안내</h2><a class="tel" href="tel:01055140374" style="display:block;color:inherit;text-decoration:none"><small>상담</small>010-5514-0374</a><div class="hours">부담 없는 레벨테스트 · 전화나 왼쪽 신청서로 문의해 주세요</div><a class="hp-btn" href="tel:01055140374" style="text-decoration:none;display:inline-flex">전화 걸기</a></div>
   </div></div></section>
-  <section class="hp-sec" style="padding-top:10px"><div class="hp-wrap"><h2 class="hp-h2">지금 열린 강좌<button data-act="hpvideo">전체 보기 →</button></h2><div class="courses">${courses}</div></div></section>
+  <section class="hp-sec" id="notice" style="padding-top:10px"><div class="hp-wrap"><div class="hp-two">
+    <div class="hp-box"><h2 class="hp-h2">공지사항</h2><div class="nl">${notices.map((n,i)=>`<button data-act="hpnotice" data-v="${i}"><span>${esc(n.title)}</span><time>${n.date}</time></button>`).join('')||'<div class="muted" style="padding:14px 0">등록된 공지가 없어요</div>'}</div></div>
+    <div class="hp-box hp-map"><h2 class="hp-h2">오시는 길</h2>${minimap()}<div class="addr">평촌학원가 · 평촌대로 · 신풍빌딩 303호</div><a href="https://map.naver.com/p/search/%EC%97%90%EC%9D%B4%ED%8E%99%EC%8A%A4%EC%98%81%EC%96%B4%ED%95%99%EC%9B%90" target="_blank" rel="noopener">네이버 지도에서 보기 →</a></div>
+  </div></div></section>
+  <section class="hp-sec" style="padding-top:10px"><div class="hp-wrap"><h2 class="hp-h2">지금 열린 강좌<button data-act="hpvideo">전체 보기 →</button></h2><div class="courses">${courses||'<div class="muted">강좌가 곧 열려요</div>'}</div></div></section>
   <section class="hp-sec" style="padding-top:10px"><div class="hp-wrap"><h2 class="hp-h2">온라인 강의실은 이렇게 이용해요</h2><div class="steps3">
     <div class="step3"><div class="n">1</div><b>계정 받기</b><small>학원에서 아이디와 비밀번호를 발급해 드립니다</small></div>
     <div class="step3"><div class="n">2</div><b>반 배정</b><small>담당 선생님이 내 반 강의를 열어 드립니다</small></div>
-    <div class="step3"><div class="n">3</div><b>언제든 복습</b><small>로그인하면 내 반 영상과 진도가 보입니다</small></div></div></div></section>
+    <div class="step3"><div class="n">3</div><b>언제든 예·복습</b><small>로그인하면 내 반 영상과 진도가 보입니다</small></div></div></div></section>
   <section class="hp-sec" id="about" style="padding-top:10px"><div class="hp-wrap"><h2 class="hp-h2">학원소개</h2><div class="steps3">
     <div class="step3" style="background:#fff;border:1.5px solid var(--hp-line)"><div class="n">01</div><b>레벨별 소수 정예</b><small>입학 테스트로 정확한 반 배정, 한 반 8명 이내 수업</small></div>
     <div class="step3" style="background:#fff;border:1.5px solid var(--hp-line)"><div class="n">02</div><b>영상 복습 시스템</b><small>수업 후 영상으로 다시 보고, 시청 여부까지 확인합니다</small></div>
     <div class="step3" style="background:#fff;border:1.5px solid var(--hp-line)"><div class="n">03</div><b>학부모 보고</b><small>출결 알림, 주간성취도, 월말보고서로 매주 소통합니다</small></div></div></div></section>
-  <section class="hp-sec" id="consultSec" style="padding-top:10px"><div class="hp-wrap"><h2 class="hp-h2">상담 신청</h2>
-    <form class="hp-form" data-form="consult"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required placeholder="홍길동"></div><div class="f"><label>연락처</label><input name="phone" required placeholder="010-0000-0000"></div></div>
-      <div class="f"><label>학년</label><select name="grade">${['초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div>
-      <div class="f"><label>문의 내용</label><textarea name="msg" placeholder="궁금한 점을 적어 주세요"></textarea></div>
-      <button class="hp-btn" style="width:100%">상담 신청하기</button></form></div></section>
-  <footer class="hp-foot"><div class="hp-wrap"><img class="flogo" src="img/logo-cream.png" alt="${NAME}"><b>${NAME}</b>본관 031-123-4567 · 2관 031-765-4321 · 월–금 14:00–22:00 · 토 10:00–18:00 상담 가능<br><span class="w">시연용 화면입니다. 연락처와 내용은 예시예요.</span></div></footer>`;
+  <footer class="hp-foot"><div class="hp-wrap"><img class="flogo" src="img/logo-cream.png" alt="${NAME}"><b>${NAME}</b>상담 010-5514-0374 · 평촌학원가 신풍빌딩 303호<br><a class="w" href="https://blog.naver.com/apex_mbs" target="_blank" rel="noopener" style="text-decoration:none">네이버 블로그 →</a></div></footer>`;
   const hintTxt=`디자인은 맨 위 <b>디자인 A·B·C</b>에서 바꿀 수 있고, 홈페이지부터 관리 화면까지 함께 바뀌어요. 상담 신청을 남긴 뒤 위쪽 <b>관리부</b> 화면 › 상담 신청 접수에서 확인해 보세요.`;
   return `<div class="hp v${V}">${side}<div class="hp-wrap hp-hint">${hint(hintTxt)}</div>${V==='C'?'':head}${hero}${body}
 </div>`;
@@ -861,7 +927,7 @@ function vSvideos(){
   const vs=st.videos.filter(v=>!v.teacherOnly&&v.classIds.includes(s.cid));
   return `<h2>영상 강의실</h2><p class="desc">${esc(s.name)} 학생 · ${esc(cls(s.cid).name)}에 열린 영상만 보여요</p>
   ${hint('영상을 재생한 다음 진행 막대에서 아직 안 본 뒤쪽을 눌러 보세요. 넘어가지 않아요. 끝까지 보면 관리부·선생님 시청 현황에 바로 반영돼요.'+(st.tier>=4?' 하이퍼에서는 문제 번호별 구간 바로가기가 붙어요.':''))}
-  <div class="grid g3">${vs.map(v=>{const p=st.progress[s.id+'|'+v.id]||{max:0,done:false};const pc=p.done?100:Math.round(p.max/v.dur*100);
+  <div class="grid g3">${vs.map(v=>{const p=st.progress[s.id+'|'+v.id]||{max:0,done:false};const D=v.dur||p.dur||0;const pc=p.done?100:D?Math.min(100,Math.round(p.max/D*100)):0;
     return `<div class="vcard"><div class="vthumb">▶<span>${fmtT(v.dur)}</span></div><div class="vbody"><b style="font-size:14.5px">${esc(v.title)}</b>
     <div class="row" style="margin:8px 0;justify-content:space-between">${p.done?'<span class="pill ok">시청 완료</span>':pc?`<span class="pill blue">${pc}% 시청</span>`:'<span class="pill">시작 전</span>'}<span class="muted">${esc(v.by)}</span></div>
     <div class="bar"><i style="width:${pc}%"></i></div><button class="btn sm" style="margin-top:10px;width:100%" data-act="play" data-v="${v.id}">${p.done?'다시 보기':pc?'이어 보기':'재생'}</button></div></div>`}).join('')||'<div class="empty">열린 영상이 없어요</div>'}</div>`;
@@ -895,11 +961,11 @@ function vPhome(){
   else if(st.tier>=4)rcv=`<span class="pill warn">앱 미설치 · ${s.kakao?'카카오톡':'문자'}로 받는 중</span>`;
   else rcv='<span class="pill bad">앱 미설치 · 알림 못 받음</span>';
   const days=[...Array(7)].map((_,i)=>addDays(-i));
-  return `<h2>${esc(s.name)} 학생 · 오늘</h2><p class="desc">학부모님 휴대폰에서 보는 화면이에요</p>
+  return `<h2>${esc(s.name)} 학생 · 오늘</h2><p class="desc">오늘 등원 · 하원과 숙제를 확인해요</p>
   ${hint('왼쪽에서 자녀를 이도윤으로 바꾸면 앱이 없는 학부모예요. 여기서 앱을 설치하면 이후 알림이 앱으로 와요.')}
   <div class="grid g3" style="margin-bottom:16px">${stat('등원',a.in||'-')}${stat('하원',a.out||'-')}${stat('오늘 출결',stPill(a.st))}</div>
   <div class="grid g2"><div class="card"><h3>오늘 숙제</h3>${hw.map(h=>`<p style="margin:0 0 6px">${esc(h.text)}</p><span class="muted">${esc(h.by)}</span>`).join('')||'<div class="empty">오늘 숙제가 아직 없어요</div>'}</div>
-  <div class="card"><h3>알림 받는 방법</h3><p>${rcv}</p>${appOn()&&!s.parentApp?'<button class="btn acc sm" data-act="pinstall">학원 앱 설치하기</button>':''}${!appOn()?`<p class="muted">학원 앱은 ${tb(2)}부터 선택할 수 있어요</p>`:''}</div></div>
+  <div class="card"><h3>학원 공지</h3>${st.notices.slice(0,3).map(n=>`<div class="li"><span>${esc(n.title)}</span><span class="muted">${esc(n.date)}</span></div>`).join('')||'<div class="empty">새 공지가 없어요</div>'}</div></div>
   <div class="card"><h3>최근 7일 출결</h3>${days.map(d=>{const x=attOf(s.id,d);return `<div class="li"><span>${md(d)}</span><span>${x?stPill(x.st)+(x.in?` <span class="muted">${x.in}${x.out?' ~ '+x.out:''}</span>`:''):'<span class="muted">기록 없음</span>'}</span></div>`}).join('')}</div>`;
 }
 function vPreports(){
@@ -952,17 +1018,15 @@ function vTstudents(){
   return `<h2>내 반 학생</h2><p class="desc">${esc(selT().name)} 담당 반</p>${cs.map(c=>`<div class="card"><h3>${esc(c.name)} <span class="pill">${c.branch} · ${c.days}</span></h3><div class="tw"><table><tr><th>이름</th><th>학년</th><th>영상 시청</th>${st.tier>=3?'<th>오늘 출결</th>':''}</tr>${act().filter(s=>s.cid===c.id).map(s=>{const vs=st.videos.filter(v=>v.classIds.includes(c.id));const dn=vs.filter(v=>st.progress[s.id+'|'+v.id]?.done).length;return `<tr><td><b>${esc(s.name)}</b></td><td>${s.grade}</td><td>${dn} / ${vs.length} 완료</td>${st.tier>=3?`<td>${stPill(attOf(s.id)?.st)}</td>`:''}</tr>`}).join('')}</table></div></div>`).join('')}`;
 }
 function vTupload(){
-  const t=selT(),mine=st.videos.filter(v=>v.by===t.name);
-  const used=(8.2+mine.length*0.6).toFixed(1);
-  return `<h2>영상 올리기</h2><p class="desc">홈페이지에서 바로 비메오 내 폴더로 올라가요. 다른 선생님 영상은 보이지 않아요.</p>
+  const t=selT(),mine=st.videos.filter(v=>v.tid===t.id||v.by===t.name);
+  return `<h2>영상 올리기</h2><p class="desc">비메오에 올린 영상 주소를 넣으면 해당 반 학생 영상 강의실에 바로 열려요</p>
   ${hint('반과 제목을 넣고 올리면 해당 반 학생 영상 강의실에 바로 나타나요.')}
-  <div class="card"><div class="row" style="justify-content:space-between"><b>내 폴더 사용량</b><span class="muted">${used}GB / 30GB</span></div><div class="bar" style="margin-top:8px;height:10px"><i style="width:${used/30*100}%"></i></div></div>
   <form class="card" data-form="upload"><div class="grid g2"><div class="f"><label>반 (폴더)</label><select name="cid">${tCls().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><div class="f"><label>영상 제목</label><input name="title" required placeholder="예) 중2 문법 3강 · 관계대명사"></div></div>
-    <div class="f"><label>영상 파일</label><input type="file" accept="video/*"><div class="muted" style="margin-top:4px">시연에서는 파일 없이도 올라가요</div></div><button class="btn">올리기</button></form>
+    <div class="f"><label>영상 주소</label><input name="url" required placeholder="비메오 링크 (예: https://vimeo.com/123456789)"><div class="muted" style="margin-top:4px">비메오 영상은 안 본 구간 넘기기가 막히고 시청률이 자동으로 기록돼요 · 유튜브 링크도 넣을 수 있어요</div></div><button class="btn">올리기</button></form>
   <div class="card"><h3>내가 올린 영상</h3>${mine.map(v=>`<div class="li"><span>${esc(v.title)} <span class="muted">${fmtT(v.dur)}</span></span><span class="row">${v.classIds.map(c=>`<span class="pill">${esc(cls(c).name)}</span>`).join('')}<button class="btn sm line" data-act="vdel" data-v="${v.id}">삭제</button></span></div>`).join('')||'<div class="empty">올린 영상이 없어요</div>'}</div>`;
 }
 function vWatch(cs){
-  return `<h2>시청 현황</h2><p class="desc">학생별 영상 진행률 · 끝까지 봐야 완료로 표시돼요</p>${cs.map(c=>{const vs=st.videos.filter(v=>v.classIds.includes(c.id));return `<div class="card"><h3>${esc(c.name)} <span class="pill">${c.branch}</span></h3><div class="tw"><table><tr><th>학생</th>${vs.map(v=>`<th>${esc(v.title)}</th>`).join('')}</tr>${act().filter(s=>s.cid===c.id).map(s=>`<tr><td><b>${esc(s.name)}</b></td>${vs.map(v=>{const p=st.progress[s.id+'|'+v.id];const pc=p?(p.done?100:Math.round(p.max/v.dur*100)):0;return `<td>${p&&p.done?'<span class="pill ok">완료</span>':pc?`<span class="pill blue">${pc}%</span>`:'<span class="pill bad">미시청</span>'}</td>`}).join('')}</tr>`).join('')}</table></div></div>`}).join('')}`;
+  return `<h2>시청 현황</h2><p class="desc">학생별 영상 진행률 · 끝까지 봐야 완료로 표시돼요</p>${cs.map(c=>{const vs=st.videos.filter(v=>v.classIds.includes(c.id));return `<div class="card"><h3>${esc(c.name)} <span class="pill">${c.branch}</span></h3><div class="tw"><table><tr><th>학생</th>${vs.map(v=>`<th>${esc(v.title)}</th>`).join('')}</tr>${act().filter(s=>s.cid===c.id).map(s=>`<tr><td><b>${esc(s.name)}</b></td>${vs.map(v=>{const p=st.progress[s.id+'|'+v.id];const D=v.dur||(p&&p.dur)||0;const pc=p?(p.done?100:D?Math.min(100,Math.round(p.max/D*100)):0):0;return `<td>${p&&p.done?'<span class="pill ok">완료</span>':pc?`<span class="pill blue">${pc}%</span>`:'<span class="pill bad">미시청</span>'}</td>`}).join('')}</tr>`).join('')}</table></div></div>`}).join('')}`;
 }
 function vThomework(){
   const cs=tCls(),hw=st.homework.filter(h=>cs.some(c=>c.id===h.cid)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -1019,13 +1083,13 @@ function vAstudents(){
   const list=st.students.filter(s=>(st.showLeft||s.active)&&inBr(brOf(s)));
   const chan=s=>appOn()&&s.parentApp?'<span class="pill ok">앱</span>':s.kakao?'<span class="pill warn">카톡</span>':'<span class="pill">문자</span>';
   return `<h2>학생 관리</h2><p class="desc">퇴원하면 명단에서 빠지지만 출결·보고서 기록은 남아요</p>${hint('학생을 추가하고 반을 바꿔 보세요. 반을 바꾸면 영상 권한과 출결 반이 함께 바뀌어요.')}
-  <form class="card" data-form="addstu"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:130px"><label class="muted">이름</label><input name="name" required></div><div style="width:110px"><label class="muted">학년</label><select name="grade">${['중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div><div style="flex:1;min-width:150px"><label class="muted">반</label><select name="cid">${st.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><button class="btn">학생 추가</button><button type="button" class="btn line" data-act="bulk">엑셀로 한꺼번에 등록</button></div></form>
+  <form class="card" data-form="addstu"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:130px"><label class="muted">이름</label><input name="name" required></div><div style="width:110px"><label class="muted">학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div><div style="flex:1;min-width:150px"><label class="muted">반</label><select name="cid">${st.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><button class="btn">학생 추가</button></div></form>
   <div class="card tw"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>${list.filter(s=>s.active).length}명</b><label class="row muted"><input type="checkbox" data-chg="showleft" ${st.showLeft?'checked':''}> 퇴원생도 보기</label></div>
   <table><tr><th>이름</th><th>학년</th><th>반</th><th>관</th>${st.tier>=3?'<th>학부모 알림</th><th>출결 코드</th>':''}<th></th></tr>${list.map(s=>`<tr style="${s.active?'':'opacity:.5'}"><td><b>${esc(s.name)}</b>${s.active?'':' <span class="pill">퇴원</span>'}</td><td>${s.grade}</td><td><select data-chg="scls" data-id="${s.id}" style="min-width:140px">${st.classes.map(c=>`<option value="${c.id}" ${c.id===s.cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></td><td>${brOf(s)}</td>${st.tier>=3?`<td>${chan(s)}</td><td>${s.code}</td>`:''}<td><button class="btn sm line" data-act="leave" data-v="${s.id}">${s.active?'퇴원 처리':'복귀'}</button></td></tr>`).join('')}</table></div>`;
 }
 function vAvideos(){
   return `<h2>영상 배정</h2><p class="desc">반별로 체크하면 그 반 학생에게만 영상이 열려요</p>${hint('비메오 폴더 동기화를 누르면 새 영상이 들어와요. 체크를 바꾼 뒤 학생 탭에서 확인해 보세요.')}
-  <div class="row" style="margin-bottom:12px"><button class="btn" data-act="sync">비메오 폴더 동기화</button></div>
+  
   <div class="card tw"><table><tr><th>영상</th><th>길이</th><th>올린 사람</th>${st.classes.map(c=>`<th>${esc(c.name)}</th>`).join('')}${st.tier>=4?'<th>구간</th>':''}</tr>${st.videos.map(v=>`<tr><td><b>${esc(v.title)}</b>${v.teacherOnly?' <span class="pill warn">선생님 전용</span>':''}</td><td>${fmtT(v.dur)}</td><td>${esc(v.by)}</td>${st.classes.map(c=>`<td>${v.teacherOnly?'—':`<input type="checkbox" data-chg="vperm" data-id="${v.id}" data-c="${c.id}" ${v.classIds.includes(c.id)?'checked':''}>`}</td>`).join('')}${st.tier>=4?`<td><span class="pill blue">${v.chapters.length}개</span></td>`:''}</tr>`).join('')}</table></div>`;
 }
 function vAattend(){
@@ -1123,22 +1187,13 @@ const VIEWS={videos:vSvideos,mypage:vSmypage,checkin:vScheckin,phome:vPhome,prep
   ttodo:vTtodo,tstudents:vTstudents,tupload:vTupload,twatch:()=>vWatch(tCls()),thomework:vThomework,treport:vTreport,
   adash:vAdash,aconsult:vAconsult,apopup:vApopup,avisit:vAvisit,astudents:vAstudents,avideos:vAvideos,awatch:()=>vWatch(st.classes.filter(c=>inBr(c.branch))),
   aattend:vAattend,aabsence:vAabsence,ahomework:vAhomework,areports:vAreports,adaily:vAdaily,asend:vAsend,aqr:vAqr,
+  aaccounts:()=>vAaccounts(),aclasses:()=>vAclasses(),
   dday:vDday,dweek:vDweek,dmonth:vDmonth,dcomments:vDcomments};
 
 /* ===== 영상 재생 (시연) ===== */
 let PL=null;
-function openPlayer(vid){
-  const sid=selStu('student').id,v=st.videos.find(x=>x.id===vid),key=sid+'|'+vid,p=st.progress[key]||{max:0,done:false};
-  PL={vid,sid,key,cur:p.done?0:p.max,playing:false,timer:null,dur:v.dur};
-  modal(`<h3>${esc(v.title)}</h3>
-  <div class="screen"><div class="big" id="plBig">▶</div><div id="plTime" style="margin-top:8px;font-size:14px;opacity:.85"></div><div style="position:absolute;bottom:10px;left:12px;font-size:11px;opacity:.5">시연용 빠른 재생 · 실제로는 비메오 영상</div></div>
-  <div class="seek" data-act="seek"><div class="w" id="plW"></div><div class="c" id="plC"></div></div>
-  <div class="row" style="justify-content:space-between"><button class="btn" data-act="plplay" id="plBtn">재생</button><span class="muted" id="plInfo"></span></div>
-  <div style="margin-top:16px">${st.tier>=4?`<b style="font-size:14px">구간 바로가기</b><div style="margin-top:8px">${v.chapters.map(c=>`<button class="chap" data-act="plchap" data-v="${c.t}"><span>${esc(c.l)}</span><span class="muted">${fmtT(c.t)}</span></button>`).join('')}</div>`:`<div class="muted">🔒 문제 번호별 구간 바로가기는 ${tb(4)} 기능이에요</div>`}</div>`,true);
-  plUpdate();
-}
 function plUpdate(){
-  if(!PL||!$('#plW'))return;
+  if(!PL||PL.real||!$('#plTime'))return;
   const p=st.progress[PL.key]||{max:0,done:false},w=p.done?100:p.max/PL.dur*100;
   $('#plW').style.width=w+'%';$('#plC').style.width=(PL.cur/PL.dur*100)+'%';
   $('#plTime').textContent=`${fmtT(PL.cur)} / ${fmtT(PL.dur)}`;
@@ -1163,7 +1218,7 @@ function plSeek(t){
 /* ===== 진입 팝업 ===== */
 function onEnterRole(r){
   if(st.tier<(ROLES.find(x=>x.id===r)||{t:1}).t)return;
-  if(r==='home'){st.visitsToday++;save();if(st.popup.on)modal(`<div style="text-align:center;padding:10px 6px"><span class="pill blue">공지</span><h2 style="margin:12px 0">${esc(st.popup.title)}</h2><p style="white-space:pre-line;line-height:1.8">${esc(st.popup.text)}</p><button class="btn acc" data-act="mclose">확인</button></div>`)}
+  if(r==='home'){if(st.popup.on&&st.popup.title)modal(`<div style="text-align:center;padding:10px 6px"><span class="pill blue">공지</span><h2 style="margin:12px 0">${esc(st.popup.title)}</h2><p style="white-space:pre-line;line-height:1.8">${esc(st.popup.text)}</p><button class="btn acc" data-act="mclose">확인</button></div>`)}
   if(r==='student'&&st.tier>=3){const s=selStu('student'),h=st.homework.filter(x=>x.cid===s.cid&&x.date===TODAY);if(h.length)modal(`<span class="pill warn">오늘의 숙제</span><h2 style="margin:12px 0">${esc(s.name)} 학생, 오늘 숙제예요</h2>${h.map(x=>`<div class="cmt" style="font-size:15px">${esc(x.text)}<div class="muted">${esc(x.by)}</div></div>`).join('')}<button class="btn" style="margin-top:14px" data-act="mclose">확인했어요</button>`)}
   if(r==='teacher'&&st.tier>=3){const it=todoItems();modal(`<span class="pill blue">${md(TODAY)}</span><h2 style="margin:12px 0">${esc(selT().name)} · 오늘 할 일</h2>${it.map(i=>`<div class="li"><span>${esc(i.txt)}</span><button class="btn sm line" data-act="goto" data-v="${i.go}">바로가기</button></div>`).join('')||'<p class="muted">오늘 할 일이 없어요</p>'}<button class="btn" style="margin-top:14px" data-act="mclose">닫기</button>`)}
 }
@@ -1174,7 +1229,7 @@ const ACT={
   app(){st.app=!st.app;render();toast(st.app?'학원 앱을 사용해요':'학원 앱을 쓰지 않아요')},
   reset(){modal(`<h3>시연 초기화</h3><p>입력한 내용을 모두 지우고 처음 상태로 돌릴까요?</p><div class="row"><button class="btn bad" data-act="doreset">초기화</button><button class="btn line" data-act="mclose">취소</button></div>`)},
   doreset(){ENTER=true;ENTER_ROLE=true;st=seed();$('#modal').innerHTML='';render();toast('처음 상태로 돌아갔어요')},
-  role(v){ENTER=true;ENTER_ROLE=true;st.role=v;$('#modal').innerHTML='';plStop();PL=null;render();window.scrollTo(0,0);onEnterRole(v)},
+  role(v){if(v!=='home'&&(!ME||ME.role!==v)){ACT.login();return}ENTER=true;ENTER_ROLE=true;st.role=v;$('#modal').innerHTML='';plStop();PL=null;render();window.scrollTo(0,0);onEnterRole(v)},
   menu(v){ENTER=true;st.menu[st.role]=v;document.body.classList.remove('side-open');render();window.scrollTo(0,0)},
   goto(v){ENTER=true;st.menu[st.role]=v;closeModal();window.scrollTo(0,0)},
   mclose(){closeModal()},
@@ -1184,8 +1239,8 @@ const ACT={
   scrollto(v){const e=document.getElementById(v);if(e)window.scrollTo({top:e.getBoundingClientRect().top+window.scrollY-(st.hp==='C'&&innerWidth>900?60:130),behavior:'smooth'})},
   side(){document.body.classList.toggle('side-open')},
   hpv(v){ENTER=true;ENTER_ROLE=true;st.hp=v;render();toast(({A:'A 칠판',B:'B 모눈',C:'C 세로메뉴'})[v]+' 디자인으로 바뀌었어요')},
-  hpnotice(v){const ns=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text}]:[]),...st.notices,{title:'온라인 강의실 오픈 안내',text:'로그인하면 내 반 영상 강의를 볼 수 있어요.'},{title:'2학기 기말고사 대비 일정',text:'학교별 내신 대비 일정입니다.'}];const n=ns[+v];if(n)modal(`<span class="pill blue">공지사항</span><h3 style="margin-top:10px">${esc(n.title)}</h3><p style="white-space:pre-line">${esc(n.text)}</p>`)},
-  hpvideo(){if(st.tier<2){modal(`<div style="text-align:center;padding:6px"><div style="font-size:38px">🔒</div><h3>온라인 강의실은 ${tb(2)}부터</h3><p class="muted" style="margin-bottom:16px">베이직은 홈페이지와 상담 신청까지예요. 스탠다드부터 학생 로그인과 영상 강의가 열려요.</p><button class="btn acc" style="background:${TIERS[2].c}" data-act="tier" data-v="2">스탠다드로 바꿔서 보기</button></div>`);return}ACT.role('student')},
+  hpnotice(v){const ns=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text}]:[]),...st.notices];const n=ns[+v];if(n)modal(`<span class="pill blue">공지사항</span><h3 style="margin-top:10px">${esc(n.title)}</h3><p style="white-space:pre-line">${esc(n.text)}</p>`)},
+  hpvideo(){if(!ME){ACT.login();return}ACT.role(ME.role);return;if(st.tier<2){modal(`<div style="text-align:center;padding:6px"><div style="font-size:38px">🔒</div><h3>온라인 강의실은 ${tb(2)}부터</h3><p class="muted" style="margin-bottom:16px">베이직은 홈페이지와 상담 신청까지예요. 스탠다드부터 학생 로그인과 영상 강의가 열려요.</p><button class="btn acc" style="background:${TIERS[2].c}" data-act="tier" data-v="2">스탠다드로 바꿔서 보기</button></div>`);return}ACT.role('student')},
   guide(){st.guided=true;save();modal(`<span class="pill blue">처음 보시는 분께</span><h3 style="margin-top:10px;font-size:20px">에이펙스영어학원 관리 시스템 시연</h3><p class="muted">맨 위 남색 줄은 시연을 조작하는 곳이고, 그 아래가 실제로 학원에서 쓰게 될 화면이에요.</p>
     <div class="gd"><div><span class="n">1</span><p><b>단계를 고르세요</b><span>베이직 → 스탠다드 → 프로 → 하이퍼 순서로 기능이 늘어나요. 아직 안 열린 기능은 🔒로 보여요. 옆의 <b style="display:inline">디자인 A·B·C</b>로 홈페이지부터 관리 화면까지 느낌을 한 번에 바꿀 수 있어요.</span></p></div>
     <div><span class="n">2</span><p><b>누구의 화면을 볼지 고르세요</b><span>홈페이지 · 학생 · 학부모 · 선생님 · 관리부 · 원장 화면을 오가며 볼 수 있어요.</span></p></div>
@@ -1203,8 +1258,8 @@ const ACT={
   cout(){const c=$('#code').value.trim(),s=act().find(x=>x.code===c);if(!s){toast('출결 코드를 확인해 주세요');return}const a=attOf(s.id);if(!a||!a.in){toast('등원 기록이 없어요');return}const t=now();setAtt(s.id,{out:t});const ch=sendParent(s.id,'하원 알림',`${s.name} 학생이 ${t}에 하원했어요.`);render();toast(`${s.name} 하원 완료${ch?' · 학부모 알림 발송':''}`)},
   adddate(){const d=$('#absdate').value;if(d&&!st.absDraft.includes(d)){st.absDraft.push(d);st.absDraft.sort();render()}},
   deldate(v){st.absDraft.splice(+v,1);render()},
-  pcomment(v){const i=$('#pc-'+v),t=i.value.trim();if(!t)return;const r=st.reports.find(x=>x.id===v);r.comments.push({by:'학부모',text:t,time:'오늘 '+now()});render();toast(`${tch(r.tid).name}과 원장 페이지에 전달됐어요`)},
-  treply(v){const i=$('#tr-'+v),t=i.value.trim();if(!t)return;const r=st.reports.find(x=>x.id===v);r.comments.push({by:tch(r.tid).name,text:t,time:'오늘 '+now()});sendParent(r.sid,'선생님 답글',`${tch(r.tid).name}: ${t}`);render();toast('답글이 학부모 페이지에 올라갔어요')},
+  pcomment(v){const i=$('#pc-'+v),t=i.value.trim();if(!t)return;const r=st.reports.find(x=>x.id===v);r.comments.push({by:'학부모',text:t,time:stamp()});render();toast(`${tch(r.tid).name}께 전달됐어요`)},
+  treply(v){const i=$('#tr-'+v),t=i.value.trim();if(!t)return;const r=st.reports.find(x=>x.id===v);r.comments.push({by:tch(r.tid).name,text:t,time:stamp()});sendParent(r.sid,'선생님 답글',`${tch(r.tid).name}: ${t}`);render();toast('답글이 학부모 페이지에 올라갔어요')},
   vdel(v){st.videos=st.videos.filter(x=>x.id!==v);render();toast('영상을 지웠어요')},
   addev(){const days=weekDays();modal(`<h3>일정 추가</h3><form data-form="ev"><div class="grid g2"><div class="f"><label>날짜</label><select name="date">${days.map(d=>`<option value="${d}" ${d===TODAY?'selected':''}>${md(d)}</option>`).join('')}</select></div><div class="f"><label>시간</label><input name="time" value="16:00"></div>
     ${st.tier>=4?`<div class="f"><label>관</label><select name="branch"><option>본관</option><option>2관</option></select></div>`:''}<div class="f"><label>종류</label><select name="kind"><option>상담</option><option>회의</option><option>기타</option></select></div></div><div class="f"><label>내용</label><input name="text" required placeholder="예) 중3 신규 상담 (학부모)"></div><button class="btn">추가</button></form>`)},
@@ -1218,38 +1273,132 @@ const ACT={
   absok(v){const a=st.absences.find(x=>x.id===v),i=$('#ar-'+v);a.reply=i?i.value.trim():'';a.status='확인';a.dates.forEach(d=>setAtt(a.sid,{st:'결석',reason:'사유서 제출'},d));sendParent(a.sid,'결석 사유서 확인',`사유서가 확인됐어요.${a.reply?' '+a.reply:''}`);render();toast(`${a.dates.map(md).join(', ')} 출결에 결석이 반영됐어요`)},
   approve(v){const r=st.reports.find(x=>x.id===v);r.status='공개';const s=stu(r.sid);sendParent(r.sid,`${r.type} 도착`,`${s.name} 학생의 ${r.type}가 올라왔어요. 학부모 페이지에서 확인하세요.`);render();toast(`${s.name} ${r.type} 공개 완료`)},
   survey(){const Q=[['공부할 때 우리 아이는?','계획을 세워서 한다','그때그때 몰아서 한다'],['영어에서 가장 어려워하는 것은?','단어·문법','긴 지문 독해'],['숙제는?','스스로 챙긴다','확인해 줘야 한다'],['잘 맞는 수업은?','설명 위주','문제 풀이 위주'],['지금 목표는?','학교 내신','수능·실력']];
-    modal(`<div style="max-width:380px;margin:0 auto"><span class="pill blue">에이펙스 영어학원 상담 사전 설문</span><h3>학부모님 휴대폰 화면</h3><form data-form="survey"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required></div><div class="f"><label>학년</label><select name="grade">${['중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div></div>
+    modal(`<div style="max-width:380px;margin:0 auto"><span class="pill blue">에이펙스 영어학원 상담 사전 설문</span><h3>학부모님 휴대폰 화면</h3><form data-form="survey"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required></div><div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div></div>
     ${Q.map((q,i)=>`<div class="f"><label style="color:var(--txt);font-weight:700">${i+1}. ${q[0]}</label><label class="row" style="color:var(--txt)"><input type="radio" name="q${i}" value="A" required> ${q[1]}</label><label class="row" style="color:var(--txt)"><input type="radio" name="q${i}" value="B"> ${q[2]}</label></div>`).join('')}<button class="btn acc" style="width:100%">결과 보기</button></form></div>`)},
 };
 const SUB={
-  consult(f,fd){st.consults.unshift({id:nid('q'),name:fd.name,phone:fd.phone,grade:fd.grade,msg:fd.msg||'-',time:'오늘 '+now(),done:false});f.reset();save();toast('상담 신청 완료 · 관리부 › 상담 신청 접수에서 확인할 수 있어요')},
+  consult(f,fd){const id=nid('q'),b=f.querySelector('button');b.disabled=true;DB.collection('consults').doc(id).set({id,name:fd.name,phone:fd.phone,grade:fd.grade,msg:fd.msg||'-',time:stamp(),ts:Date.now(),done:false}).then(()=>{f.reset();toast('상담 신청이 접수됐어요 · 확인 후 바로 연락드릴게요')}).catch(()=>toast('신청이 전송되지 않았어요 · 전화로 문의해 주세요 010-5514-0374')).finally(()=>b.disabled=false)},
   popup(f,fd){st.popup={on:!!fd.on,title:fd.title,text:fd.text};render();toast('저장됐어요 · 홈페이지 첫 화면에 바로 반영돼요')},
   ev(f,fd){st.schedule.push({id:nid('e'),date:fd.date,time:fd.time,branch:fd.branch||'본관',kind:fd.kind,text:fd.text});closeModal();toast('일정이 추가됐어요')},
-  addstu(f,fd){const n=st.students.length+1;st.students.push({...S('s'+n,fd.name,fd.grade,fd.cid,false,true,String(5000+n*13)),id:nid('s')});render();toast(`${fd.name} 학생 등록 · 학생 계정과 출결 코드가 함께 만들어져요`)},
-  upload(f,fd){const t=selT();modal(`<h3>영상 올리는 중</h3><p class="muted">비메오 ${esc(t.name)} 폴더로 바로 올라가요</p><div class="bar" style="height:12px"><i id="upb" style="width:0"></i></div><p id="upt" class="muted">0%</p>`);let p=0;const iv=setInterval(()=>{p+=5;const b=$('#upb');if(!b){clearInterval(iv);return}b.style.width=p+'%';$('#upt').textContent=p+'%';if(p>=100){clearInterval(iv);st.videos.push(V(nid('v'),fd.title,[fd.cid],420+Math.floor(Math.random()*300),t.name));closeModal();toast(`업로드 완료 · ${cls(fd.cid).name} 학생 영상 강의실에 바로 보여요`)}},80)},
+  addstu(f,fd){if(!fd.cid){toast('반 · 공지 관리에서 반을 먼저 만들어 주세요');return}let code;do{code=String(1000+Math.floor(Math.random()*9000))}while(st.students.some(s=>s.code===code));st.students.push({id:nid('s'),name:fd.name.trim(),grade:fd.grade,cid:fd.cid,parentApp:false,kakao:true,code,active:true,phone:'',ts:Date.now()});f.reset();render();toast(`${fd.name} 학생 등록 · 출결 코드 ${code} · 계정 관리에서 학생 · 학부모 계정을 만들어 주세요`)},
+  upload(f,fd){const t=selT();if(!fd.cid){toast('담당 반이 없어요 · 관리부에 문의해 주세요');return}const v={id:nid('v'),title:fd.title.trim(),classIds:[fd.cid],dur:0,by:t.name,tid:t.id,url:fd.url.trim(),teacherOnly:false,chapters:[],ts:Date.now()};const vm=vimeoOf(v.url);const done=()=>{st.videos.push(v);f.reset();render();toast(`${cls(fd.cid).name} 학생 영상 강의실에 바로 보여요`)};if(vm){fetch('https://vimeo.com/api/oembed.json?url='+encodeURIComponent('https://vimeo.com/'+vm.id+(vm.h?'/'+vm.h:''))).then(r=>r.json()).then(j=>{v.dur=j.duration||0}).catch(()=>{}).finally(done)}else done()},
   hw(f,fd){st.homework.push({id:nid('h'),date:fd.date,cid:fd.cid,text:fd.text,by:selT().name});render();toast('관리부 숙제 현황과 학생 마이페이지에 바로 반영됐어요')},
   report(f,fd){st.reports.push({id:nid('r'),type:fd.type,sid:fd.sid,tid:st.sel.teacher,date:TODAY,u:+fd.u,h:+fd.h,text:fd.text,status:'승인 대기',comments:[]});render();toast('작성 완료 · 관리부 보고서 승인으로 올라갔어요')},
-  absence(f,fd){const s=selStu('parent');let ds=[...st.absDraft];if(!ds.length){const d=$('#absdate').value;if(d)ds=[d]}if(!ds.length){toast('날짜를 골라 주세요');return}st.absences.unshift({id:nid('a'),sid:s.id,dates:ds,reason:fd.reason,status:'접수',reply:'',time:'오늘 '+now()});st.absDraft=[];render();toast(`관리부와 ${tch(cls(s.cid).tid).name}에게 바로 전달됐어요`)},
+  absence(f,fd){const s=selStu('parent');let ds=[...st.absDraft];if(!ds.length){const d=$('#absdate').value;if(d)ds=[d]}if(!ds.length){toast('날짜를 골라 주세요');return}st.absences.unshift({id:nid('a'),sid:s.id,dates:ds,reason:fd.reason,status:'접수',reply:'',time:stamp()});st.absDraft=[];render();toast(`관리부와 ${tch(cls(s.cid).tid).name}에게 바로 전달됐어요`)},
   absreason(f,fd){setAtt(fd.sid,{st:'결석',reason:fd.reason||''});closeModal();toast(st.tier>=4?'결석 처리 · 일일 업무보고 결석자 칸에 자동으로 들어가요':'결석 처리됐어요')},
   daily(f,fd){const br=f.dataset.br;st.daily[TODAY+'|'+br]={...fd,done:true,time:now()};render();toast(st.tier>=4?'마감 완료 · 주간 업무일지와 원장 오늘 보고에 반영됐어요':'마감 완료')},
   send(f,fd){const ts=act().filter(s=>inBr(brOf(s))&&(fd.target==='all'||s.cid===fd.target));const cnt={app:0,kakao:0,sms:0};ts.forEach(s=>{const ch=sendParent(s.id,fd.kind,fd.text,true);if(ch)cnt[ch]++});render();
     modal(`<h3>발송 완료 · ${ts.length}명</h3><div class="grid g3">${stat('앱 알림',cnt.app+'명')}${stat('카카오톡',cnt.kakao+'명')}${stat('문자',cnt.sms+'명')}</div><p class="muted">앱이 있으면 앱으로, 없으면 카톡으로, 카톡이 안 되면 문자로 학부모별로 자동으로 나눠 보냈어요.</p><button class="btn" data-act="mclose">확인</button>`)},
   survey(f,fd){let a=0;for(let i=0;i<5;i++)if(fd['q'+i]==='A')a++;const type=a>=4?'자기주도 계획형':a===3?'균형형':a===2?'관리 필요형':'집중 관리형';const focus=fd.q1==='A'?'단어·문법':'긴 지문 독해';
-    st.surveys.unshift({name:fd.name+' 학부모',grade:fd.grade,type,focus,time:'오늘 '+now()});
+    st.surveys.unshift({name:fd.name+' 학부모',grade:fd.grade,type,focus,time:stamp()});
     modal(`<div style="text-align:center;padding:10px"><span class="pill blue">설문 결과</span><h2 style="margin:12px 0">${esc(fd.name)} 학생은<br><span style="color:var(--acc)">${type}</span></h2><p class="muted">약한 영역: ${focus}<br>상담 때 선생님이 결과를 보며 자세히 안내해 드려요.</p><button class="btn" data-act="mclose">확인</button></div>`)},
 };
+
+/* ===== 실제 운영용 추가 화면 ===== */
+const RN={admin:'관리부',teacher:'선생님',student:'학생',parent:'학부모'};
+function vAaccounts(){
+  const us=(st.users||[]).slice().sort((a,b)=>(['admin','teacher','student','parent'].indexOf(a.role)-['admin','teacher','student','parent'].indexOf(b.role))||String(a.name).localeCompare(String(b.name)));
+  const ss=act();
+  return `<h2>계정 관리</h2><p class="desc">만든 아이디와 비밀번호로 로그인하면 선생님 · 학생 · 학부모 화면으로 각각 들어가요</p>
+  <form class="card" data-form="addacc"><div class="grid g3">
+    <div class="f"><label>구분</label><select name="role"><option value="student">학생</option><option value="parent">학부모</option><option value="teacher">선생님</option><option value="admin">관리부</option></select></div>
+    <div class="f"><label>연결할 학생 (학생 · 학부모)</label><select name="sid">${ss.map(s=>`<option value="${s.id}">${esc(s.name)} (${esc(s.grade)})</option>`).join('')||'<option value="">학생 관리에서 먼저 학생을 등록해 주세요</option>'}</select></div>
+    <div class="f"><label>이름 (선생님 · 관리부)</label><input name="name" placeholder="예) 홍길동T"></div>
+    <div class="f"><label>아이디</label><input name="id" required autocomplete="off" placeholder="영문 · 숫자 3자 이상"></div>
+    <div class="f"><label>비밀번호</label><input name="pw" required minlength="6" autocomplete="new-password" placeholder="6자 이상"></div>
+    <div class="f" style="display:flex;align-items:flex-end"><button class="btn" style="width:100%">계정 만들기</button></div></div>
+    <p class="muted" style="margin:6px 0 0">학생 · 학부모 이름은 연결한 학생 이름으로 자동으로 들어가요. 비밀번호는 로그인 후 오른쪽 위 「비밀번호 변경」에서 직접 바꿀 수 있어요.</p></form>
+  <div class="card tw"><table><tr><th>구분</th><th>이름</th><th>아이디</th><th>연결 학생</th><th>상태</th><th></th></tr>${us.map(u=>`<tr style="${u.active===false?'opacity:.5':''}"><td>${RN[u.role]||esc(u.role)}</td><td><b>${esc(u.name||'')}</b></td><td>${esc(u.loginId||'')}</td><td>${u.sid?esc(stu(u.sid).name):'-'}</td><td>${u.active===false?'<span class="pill">사용 중지</span>':'<span class="pill ok">사용 중</span>'}</td><td>${u.loginId==='admin'||u.id===(ME&&ME.uid)?'':`<button class="btn sm line" data-act="accact" data-v="${u.id}">${u.active===false?'다시 사용':'사용 중지'}</button>`}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">계정이 없어요</td></tr>'}</table></div>`;
+}
+function vAclasses(){
+  return `<h2>반 관리</h2><p class="desc">반을 만들고 담당 선생님과 수업 요일을 정해요 · 선생님은 계정 관리에서 먼저 만들어 주세요</p>
+  <form class="card" data-form="addcls"><div class="grid g3"><div class="f"><label>반 이름</label><input name="name" required placeholder="예) 중2 문법반"></div>
+    <div class="f"><label>담당 선생님</label><select name="tid">${st.teachers.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')||'<option value="">선생님 계정을 먼저 만들어 주세요</option>'}</select></div>
+    <div class="f"><label>수업 요일</label><div class="row" style="gap:10px;padding-top:8px">${'월화수목금토일'.split('').map(d=>`<label class="row" style="gap:3px;color:var(--txt)"><input type="checkbox" name="d_${d}">${d}</label>`).join('')}</div></div></div>
+    <button class="btn">반 만들기</button></form>
+  <div class="card tw"><table><tr><th>반</th><th>담당 선생님</th><th>요일</th><th>학생</th><th></th></tr>${st.classes.map(c=>`<tr><td><b>${esc(c.name)}</b></td><td><select data-chg="ctid" data-id="${c.id}">${st.teachers.map(t=>`<option value="${t.id}" ${t.id===c.tid?'selected':''}>${esc(t.name)}</option>`).join('')}</select></td><td>${esc(c.days)}</td><td>${act().filter(s=>s.cid===c.id).length}명</td><td><button class="btn sm line" data-act="cdel" data-v="${c.id}">삭제</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">만든 반이 없어요</td></tr>'}</table></div>
+  <div class="card"><h3>공지사항</h3><form data-form="addnotice"><div class="grid g2"><div class="f"><label>제목</label><input name="title" required></div><div class="f"><label>날짜</label><input type="date" name="date" value="${TODAY}"></div></div><div class="f"><label>내용</label><textarea name="text" rows="3"></textarea></div><button class="btn">공지 올리기</button></form>
+  ${st.notices.map(n=>`<div class="li"><span><b>${esc(n.title)}</b> <span class="muted">${esc(n.date)}</span></span><button class="btn sm line" data-act="ndel" data-v="${n.id}">삭제</button></div>`).join('')}</div>`;
+}
+function minimap(){
+  return `<svg class="mmap" viewBox="0 0 520 340" role="img" aria-label="에이펙스영어학원 약도">
+  <rect width="520" height="340" fill="#f1efe9"/>
+  <g transform="rotate(68 260 170)">
+    <rect x="-300" y="196" width="1100" height="200" fill="#e4e1d9"/>
+    <rect x="-300" y="132" width="1100" height="10" fill="#fff"/>
+    <rect x="-300" y="58" width="1100" height="74" fill="#fbfaf7"/>
+    <line x1="-300" y1="95" x2="800" y2="95" stroke="#e2ddd2" stroke-width="2" stroke-dasharray="14 10"/>
+    <text x="330" y="88" font-size="14" fill="#8a8476" font-weight="700" letter-spacing="2">평촌대로</text>
+    <rect x="-300" y="-60" width="1100" height="114" fill="#e9e3d6"/>
+    <g font-size="11" fill="#6d6657" text-anchor="middle"><rect x="45" y="142" width="78" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="84.0" y="174" transform="rotate(-68 84.0 170)"><tspan x="84.0" dy="0">KT</tspan></text><rect x="125" y="142" width="88" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="169.0" y="167" transform="rotate(-68 169.0 170)"><tspan x="169.0" dy="0">평촌트윈</tspan><tspan x="169.0" dy="14">프라자</tspan></text><rect x="215" y="142" width="90" height="54" fill="#c62f24" stroke="#fff" stroke-width="2"/><rect x="307" y="142" width="78" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="346.0" y="174" transform="rotate(-68 346.0 170)"><tspan x="346.0" dy="0">맥도날드</tspan></text><rect x="387" y="142" width="92" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="433.0" y="167" transform="rotate(-68 433.0 170)"><tspan x="433.0" dy="0">홈플러스</tspan><tspan x="433.0" dy="14">익스프레스</tspan></text><rect x="481" y="142" width="76" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="519.0" y="174" transform="rotate(-68 519.0 170)"><tspan x="519.0" dy="0">이디야커피</tspan></text><rect x="559" y="142" width="90" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/><text x="604.0" y="174" transform="rotate(-68 604.0 170)"><tspan x="604.0" dy="0">신흥상가</tspan></text><rect x="-40" y="142" width="83" height="54" fill="#ebe1ce" stroke="#fff" stroke-width="2"/></g>
+  </g>
+  <g transform="translate(260 110)"><path d="M0 0c-14 0-24 10-24 23 0 17 24 37 24 37s24-20 24-37C24 10 14 0 0 0z" fill="#c62f24" stroke="#fff" stroke-width="3"/><circle cx="0" cy="22" r="8" fill="#fff"/></g>
+  <g transform="translate(140 175)"><rect x="-70" y="0" width="140" height="30" rx="15" fill="#1f2a24"/><text x="0" y="20" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff">에이펙스영어학원</text></g>
+  <text x="14" y="330" font-size="11" fill="#9a9486">약도 · 실제 거리와 다를 수 있어요</text>
+  </svg>`;
+}
+function openPlayer(vid){
+  const s=selStu('student'),v=st.videos.find(x=>x.id===vid);if(!v)return;
+  const key=s.id+'|'+vid,vm=vimeoOf(v.url),yt=ytOf(v.url);
+  if(!vm){
+    modal(`<h3>${esc(v.title)}</h3>${yt||v.url?`<div class="vwrap"><iframe src="${yt?'https://www.youtube.com/embed/'+yt:esc(v.url)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`:'<div class="empty">영상 주소가 없어요 · 선생님께 문의해 주세요</div>'}
+    <div class="row" style="justify-content:space-between;margin-top:12px"><span class="muted">끝까지 본 뒤 눌러 주세요</span><button class="btn" data-act="pldone" data-v="${vid}">다 봤어요</button></div>`,true);return}
+  PL={vid,key,real:true,dur:v.dur||0};
+  modal(`<h3>${esc(v.title)}</h3><div class="vwrap"><iframe id="vmf" src="https://player.vimeo.com/video/${vm.id}${vm.h?'?h='+vm.h:''}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>
+  <div class="bar" style="margin-top:12px;height:8px"><i id="plW" style="width:0"></i></div><p class="muted" id="plInfo" style="margin-top:6px">불러오는 중…</p>`,true);
+  loadVimeo().then(()=>{
+    const fr=$('#vmf');if(!fr||!PL)return;const pl=new Vimeo.Player(fr);PL.p=pl;
+    const pr=st.progress[key]||{max:0,done:false};let maxT=pr.max||0,done=!!pr.done,lastSave=0;
+    const upd=()=>{const w=done?100:(PL&&PL.dur?Math.min(100,maxT/PL.dur*100):0);const W=$('#plW'),I=$('#plInfo');if(W)W.style.width=w+'%';if(I)I.textContent=done?'시청 완료 · 자유롭게 이동할 수 있어요':`시청 ${Math.round(w)}% · 안 본 구간으로는 넘길 수 없어요`};
+    pl.getDuration().then(d=>{if(PL){PL.dur=d}upd();if(maxT>5&&!done)pl.setCurrentTime(Math.max(0,maxT-3)).catch(()=>{})});
+    const guard=e=>{if(!done&&e.seconds>maxT+2){pl.setCurrentTime(maxT).catch(()=>{});toast('아직 안 본 구간으로는 넘길 수 없어요');return true}return false};
+    pl.on('seeked',guard);
+    pl.on('timeupdate',e=>{if(guard(e))return;if(e.seconds>maxT){maxT=e.seconds;st.progress[key]={max:Math.round(maxT),done:false,dur:Math.round(PL?PL.dur:0)};upd();if(Date.now()-lastSave>8000){lastSave=Date.now();save()}}});
+    pl.on('ended',()=>{done=true;st.progress[key]={max:Math.round(PL&&PL.dur?PL.dur:maxT),done:true,dur:Math.round(PL?PL.dur:0)};save();upd();toast('시청 완료! 선생님 시청 현황에 바로 반영돼요')});
+  }).catch(()=>toast('영상 플레이어를 불러오지 못했어요'));
+}
+Object.assign(ACT,{
+  login(){modal(`<div style="max-width:360px;margin:0 auto"><img src="img/mark-black.png" alt="" style="height:44px;display:block;margin:4px auto 10px"><h3 style="text-align:center">로그인</h3><form data-form="login"><div class="f"><label>아이디</label><input name="id" required autocomplete="username" autocapitalize="off"></div><div class="f"><label>비밀번호</label><input type="password" name="pw" required autocomplete="current-password"></div><button class="btn" style="width:100%;padding:12px">로그인</button></form><p class="muted" style="text-align:center;margin-top:12px">아이디와 비밀번호는 학원에서 발급해 드려요</p></div>`)},
+  logout(){AUTH.signOut().then(()=>toast('로그아웃했어요'))},
+  mypage(){if(ME)ACT.role(ME.role);else ACT.login()},
+  pwchange(){modal(`<h3>비밀번호 변경</h3><form data-form="pw"><div class="f"><label>새 비밀번호</label><input type="password" name="pw" required minlength="6" autocomplete="new-password"></div><div class="f"><label>새 비밀번호 확인</label><input type="password" name="pw2" required minlength="6" autocomplete="new-password"></div><button class="btn">바꾸기</button></form>`)},
+  accact(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;DB.collection('users').doc(v).update({active:u.active===false}).then(()=>toast(u.active===false?'다시 사용할 수 있어요':'사용을 멈췄어요 · 이 계정으로는 로그인되지 않아요')).catch(()=>toast('바꾸지 못했어요'))},
+  cdel(v){if(act().some(s=>s.cid===v)){toast('이 반에 학생이 있어요 · 학생 반을 먼저 옮겨 주세요');return}st.classes=st.classes.filter(c=>c.id!==v);render();toast('반을 지웠어요')},
+  ndel(v){st.notices=st.notices.filter(n=>n.id!==v);render();toast('공지를 지웠어요')},
+  pldone(v){const s=selStu('student');st.progress[s.id+'|'+v]={max:0,done:true};closeModal();toast('시청 완료로 기록했어요')},
+});
+Object.assign(SUB,{
+  async login(f,fd){const b=f.querySelector('button');b.disabled=true;GO_ROLE=true;try{await AUTH.signInWithEmailAndPassword(idEmail(fd.id),fd.pw);$('#modal').innerHTML=''}catch(e){GO_ROLE=false;toast('아이디 또는 비밀번호를 확인해 주세요')}finally{b.disabled=false}},
+  async pw(f,fd){if(fd.pw!==fd.pw2){toast('두 비밀번호가 달라요');return}try{await AUTH.currentUser.updatePassword(fd.pw);closeModal();toast('비밀번호를 바꿨어요')}catch(e){toast(e.code==='auth/requires-recent-login'?'보안을 위해 로그아웃 후 다시 로그인한 다음 바꿔 주세요':'바꾸지 못했어요')}},
+  async addacc(f,fd){
+    const id=String(fd.id||'').trim().toLowerCase();if(!/^[a-z0-9._-]{3,30}$/.test(id)){toast('아이디는 영문 · 숫자 3자 이상으로 넣어 주세요');return}
+    if((st.users||[]).some(u=>u.loginId===id)){toast('이미 있는 아이디예요');return}
+    let name=String(fd.name||'').trim(),sid=null;
+    if(fd.role==='student'||fd.role==='parent'){const s=st.students.find(x=>x.id===fd.sid);if(!s){toast('연결할 학생을 골라 주세요');return}sid=s.id;name=s.name+(fd.role==='parent'?' 학부모':'')}
+    else if(!name){toast('이름을 넣어 주세요');return}
+    const b=f.querySelector('button');b.disabled=true;b.textContent='만드는 중…';
+    try{const uid=await makeAuthUser(id,fd.pw);const doc={role:fd.role,name,loginId:id,active:true,created:Date.now()};if(sid)doc.sid=sid;if(fd.role==='teacher')doc.tid=uid;
+      await DB.collection('users').doc(uid).set(doc);
+      if(fd.role==='teacher'){st.teachers.push({id:uid,name,branch:'본관'});save()}
+      f.reset();toast(`${name} 계정을 만들었어요 · 아이디 ${id}`)}
+    catch(e){console.error(e);toast(e.code==='auth/email-already-in-use'?'이미 있는 아이디예요':e.code==='auth/weak-password'?'비밀번호는 6자 이상이어야 해요':'계정을 만들지 못했어요')}
+    finally{b.disabled=false;b.textContent='계정 만들기'}},
+  addcls(f,fd){if(!fd.tid){toast('담당 선생님을 먼저 만들어 주세요');return}const days='월화수목금토일'.split('').filter(d=>fd['d_'+d]).join('');st.classes.push({id:nid('c'),name:fd.name.trim(),branch:'본관',days:days||'-',tid:fd.tid});render();toast('반을 만들었어요')},
+  addnotice(f,fd){st.notices.unshift({id:nid('n'),title:fd.title.trim(),text:fd.text||'',date:fd.date||TODAY,ts:Date.now()});render();toast('공지를 올렸어요 · 홈페이지와 학부모 화면에 바로 보여요')},
+});
 
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f)f(el.dataset.v,el,e)});
 document.addEventListener('change',e=>{const el=e.target,k=el.dataset.chg;if(!k)return;
   if(k==='sel'){st.sel[el.dataset.k]=el.value;render();if(el.dataset.k==='student')onEnterRole('student')}
   else if(k==='branch'){st.branch=el.value;render()}
   else if(k==='showleft'){st.showLeft=el.checked;render()}
+  else if(k==='ctid'){const c=cls(el.dataset.id);c.tid=el.value;render();toast('담당 선생님을 바꿨어요')}
   else if(k==='scls'){stu(el.dataset.id).cid=el.value;render();toast('반이 바뀌었어요 · 영상 권한과 출결 반도 함께 바뀌어요')}
   else if(k==='vperm'){const v=st.videos.find(x=>x.id===el.dataset.id),c=el.dataset.c;v.classIds=el.checked?[...v.classIds,c]:v.classIds.filter(x=>x!==c);save();toast(el.checked?`${cls(c).name} 학생들에게 영상이 열렸어요`:`${cls(c).name} 학생들에게서 영상이 숨겨졌어요`)}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,h=SUB[f.dataset.form];if(!h)return;const fd={};new FormData(f).forEach((v,k)=>fd[k]=v);h(f,fd)});
 
-render();if(!st.guided)ACT.guide();else onEnterRole(st.role);
+render();
 </script>
 </body>
 </html>
