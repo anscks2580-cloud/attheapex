@@ -881,7 +881,7 @@ function viewHome(){
       <div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div>
       <div class="f"><label>문의 내용</label><textarea name="msg" placeholder="다니는 학교, 궁금한 점을 적어 주세요"></textarea></div>
       <button class="hp-btn" style="width:100%">상담 신청하기</button></form></div>
-    <div class="hp-box dark"><h2 class="hp-h2">상담 안내</h2><a class="tel" href="tel:01055140374" style="display:block;color:inherit;text-decoration:none"><small>상담</small>010-5514-0374</a><div class="hours">부담 없는 레벨테스트 · 전화나 왼쪽 신청서로 문의해 주세요</div><a class="hp-btn" href="tel:01055140374" style="text-decoration:none;display:inline-flex">전화 걸기</a></div>
+    <div class="hp-box dark"><h2 class="hp-h2">상담 안내</h2><a class="tel" href="tel:01055140374" style="display:block;color:inherit;text-decoration:none"><small>상담</small>010-5514-0374</a><div class="hours">부담 없는 레벨테스트 · 전화나 왼쪽 신청서로 문의해 주세요</div><div class="row" style="gap:8px;flex-wrap:wrap"><a class="hp-btn" href="tel:01055140374" style="text-decoration:none;display:inline-flex">전화 걸기</a><a class="hp-btn gh" href="https://blog.naver.com/apex_mbs" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex">네이버 블로그</a></div></div>
   </div></div></section>
   <section class="hp-sec" id="notice" style="padding-top:10px"><div class="hp-wrap"><div class="hp-two">
     <div class="hp-box"><h2 class="hp-h2">공지사항</h2><div class="nl">${notices.map((n,i)=>`<button data-act="hpnotice" data-v="${i}"><span>${esc(n.title)}</span><time>${n.date}</time></button>`).join('')||'<div class="muted" style="padding:14px 0">등록된 공지가 없어요</div>'}</div></div>
