@@ -860,7 +860,7 @@ function viewHome(){
   const nav=Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}">${q[0]}</button>`).join('');
   const login=`<button class="hp-login" data-act="hpvideo">${ME?'내 페이지':'로그인'}</button>`;
   const head=`<header class="hp-head"><div class="hp-wrap hp-bar"><button class="hp-logo" data-act="scrollto" data-v="hpTop"><img src="img/mark-black.png" alt=""><b>${NAME}</b></button><nav class="hp-nav">${nav}</nav>${login}</div></header>`;
-  const cta=`<div class="cta"><button class="hp-btn" data-act="hpvideo">${V==='B'?'온라인 강의실 로그인':'강의실 로그인'}</button><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
+  const cta=`<div class="cta"><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
   const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
   let hero;
   if(V==='A')hero=`<section class="hA" id="hpTop">${chalk()}<div class="hp-wrap hA-in"><div><span class="kick">기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}</div>
