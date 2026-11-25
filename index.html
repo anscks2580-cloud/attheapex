@@ -376,6 +376,17 @@ body.has-phone #toast{bottom:auto;top:calc(var(--bar-h) + var(--top-h) + 14px)}
 .step3 b{display:block;font-size:16px;margin-top:4px}
 .step3 small{color:var(--hp-muted);font-size:13px}
 .step3 em{display:block;font-style:normal;font-weight:700;font-size:14px;color:var(--hp-strong);margin:6px 0 4px}
+.team{background:var(--hp-night);color:#fff;padding:56px 0 60px}
+.team .hp-h2{color:#fff;margin-bottom:6px}
+.team .tsub{color:rgba(255,255,255,.7);font-size:14px;margin:0 0 26px}
+.team-g{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.tm{margin:0;background:#fff;border-radius:var(--hp-r);overflow:hidden;color:var(--hp-ink);transition:transform .3s var(--ease-out),box-shadow .3s}
+.tm:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.tm img{display:block;width:100%;aspect-ratio:5/6;object-fit:cover;background:#e9e9ec}
+.tm figcaption{padding:14px 16px 16px;display:flex;align-items:baseline;gap:8px}
+.tm figcaption b{font-family:var(--hp-display);font-size:19px;letter-spacing:-.3px}
+.tm figcaption span{font-size:13px;font-weight:700;color:var(--hp-strong)}
+@media(max-width:1000px){.team-g{grid-template-columns:repeat(2,1fr);gap:12px}.team{padding:40px 0 44px}.tm figcaption b{font-size:17px}}
 .steps4{grid-template-columns:repeat(4,1fr)}
 @media(max-width:1000px){.steps4{grid-template-columns:repeat(2,1fr)}}
 .hp-form{max-width:640px;background:#fff;border:1.5px solid var(--hp-line);border-radius:var(--hp-r);padding:26px}
@@ -890,6 +901,7 @@ function viewHome(){
   const W=['Grammar','Reading','Blank','Text'];
   const courses=st.classes.map((c,i)=>{const n=st.videos.filter(v=>v.classIds.includes(c.id)&&!v.teacherOnly).length;return `<button class="course" data-act="hpvideo"><div class="th" style="background:${GR[i%4]}"><span class="bd">${c.name.slice(0,2)}</span><div class="t">${esc(c.name)}</div><span class="w">${W[i%4]}</span></div><div class="bd2"><b>${esc(c.name)}</b><small>${esc(tch(c.tid).name)} · ${n}강</small></div></button>`}).join('');
   const body=`
+  <section class="team" id="team"><div class="hp-wrap"><h2 class="hp-h2">에이펙스 강사진</h2><p class="tsub">정상(APEX)까지, 한 걸음씩 함께 가는 선생님들</p><div class="team-g"><figure class="tm"><img src="img/t-kmj.jpg" alt="김민정 원장" loading="lazy"><figcaption><b>김민정</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bsa.jpg" alt="백선애 원장" loading="lazy"><figcaption><b>백선애</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bjy.jpg" alt="백지연 선생님" loading="lazy"><figcaption><b>백지연</b><span>선생님</span></figcaption></figure><figure class="tm"><img src="img/t-kbk.jpg" alt="김보경 선생님" loading="lazy"><figcaption><b>김보경</b><span>선생님</span></figcaption></figure></div></div></section>
   <section class="hp-sec consult-top" id="consultSec"><div class="hp-wrap"><div class="hp-two">
     <div><h2 class="hp-h2">상담 신청</h2>
     <form class="hp-form" data-form="consult"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required placeholder="홍길동"></div><div class="f"><label>연락처</label><input name="phone" required placeholder="010-0000-0000"></div></div>
