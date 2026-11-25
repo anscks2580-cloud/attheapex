@@ -1431,7 +1431,7 @@ function vAstudents(){
   <table><tr><th>이름</th><th>학년</th><th>학교</th><th>반</th><th>학생 연락처</th><th>보호자 연락처</th><th>출결 코드</th><th>아이디</th><th>비밀번호</th><th></th></tr>${list.map(s=>{const u=accOf(s.id),sec=u&&SECRETS[u.id];return `<tr style="${s.active?'':'opacity:.5'}"><td><b>${esc(s.name)}</b>${s.active?'':' <span class="pill">퇴원</span>'}</td><td>${esc(s.grade)}</td><td>${esc(s.school||'')}</td><td><select data-chg="scls" data-id="${s.id}" style="min-width:120px">${st.classes.map(c=>`<option value="${c.id}" ${c.id===s.cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></td><td>${esc(s.phone||'')}</td><td>${esc(s.pphone||'')}</td><td>${esc(s.code||'')}</td>
     <td>${u?esc(u.loginId):`<button class="btn sm line" data-act="mkacc" data-v="${s.id}">계정 만들기</button>`}</td>
     <td>${u?`<div class="row" style="gap:4px;flex-wrap:nowrap"><input id="pw-${u.id}" value="${esc(sec?sec.pw:'')}" style="width:90px">${u.mustChange?'<span class="pill warn">변경 전</span>':''}</div>`:''}</td>
-    <td style="white-space:nowrap">${u?`<button class="btn sm" data-act="pwset" data-v="${u.id}">저장</button> <button class="btn sm line" data-act="pwreset" data-v="${u.id}">재설정</button> `:''}<button class="btn sm line" data-act="leave" data-v="${s.id}">${s.active?'퇴원':'복귀'}</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">등록된 학생이 없어요</td></tr>'}</table></div>`;
+    <td style="white-space:nowrap">${u?`<button class="btn sm" data-act="pwset" data-v="${u.id}">저장</button> <button class="btn sm line" data-act="pwreset" data-v="${u.id}">재설정</button> `:''}<button class="btn sm line" data-act="leave" data-v="${s.id}">${s.active?'퇴원':'복귀'}</button>${s.active?'':` <button class="btn sm bad" data-act="sdel" data-v="${s.id}">완전 삭제</button>`}</td></tr>`}).join('')||'<tr><td colspan="10" class="empty">등록된 학생이 없어요</td></tr>'}</table></div>`;
 }
 function newCode(){let code;do{code=String(1000+Math.floor(Math.random()*9000))}while(st.students.some(s=>s.code===code));return code}
 const normPhone=v=>{let d=String(v==null?'':v).replace(/[^0-9]/g,'');if(/^1\d{8,9}$/.test(d))d='0'+d;return d.replace(/^(01\d)(\d{3,4})(\d{4})$/,'$1-$2-$3').replace(/^(02)(\d{3,4})(\d{4})$/,'$1-$2-$3').replace(/^(0\d{2})(\d{3,4})(\d{4})$/,'$1-$2-$3')};
@@ -1453,6 +1453,16 @@ async function importRows(rows){
   setTimeout(()=>{P(msg)},50);toast(msg);
 }
 Object.assign(ACT,{
+  async sdel(v){const s=st.students.find(x=>x.id===v);if(!s)return;if(s.active){toast('퇴원 처리한 학생만 완전히 지울 수 있어요');return}
+    if(!confirm(s.name+' 학생을 완전히 지울까요?\n학생 · 학부모 계정, 출결, 시청 기록, 보고서, 결석 사유서가 모두 지워지고 되돌릴 수 없어요.'))return;
+    const accs=(st.users||[]).filter(u=>u.sid===v);
+    for(const u of accs){const pw=SECRETS[u.id]&&SECRETS[u.id].pw;
+      if(pw!=null){try{const a=makerAuth();await a.setPersistence(firebase.auth.Auth.Persistence.NONE);const c=await signInAny(a,u.loginId,pw);await c.user.delete();await a.signOut()}catch(err){console.warn('계정 삭제',err)}}
+      await DB.collection('secrets').doc(u.id).delete().catch(()=>{});await DB.collection('users').doc(u.id).delete().catch(()=>{});}
+    Object.keys(st.progress).forEach(k=>{if(k.startsWith(v+'|'))delete st.progress[k]});
+    Object.values(st.attendance).forEach(m=>{if(m)delete m[v]});
+    st.reports=st.reports.filter(r=>r.sid!==v);st.absences=st.absences.filter(a=>a.sid!==v);
+    st.students=st.students.filter(x=>x.id!==v);st.users=(st.users||[]).filter(u=>u.sid!==v);render();toast(s.name+' 학생 기록을 모두 지웠어요')},
   async xltpl(){try{await loadXLSX()}catch(e){toast('엑셀 도구를 불러오지 못했어요');return}
     const ws=XLSX.utils.aoa_to_sheet([COLS,['홍길동','중2','평촌중','중2 문법반','01012345678','01098765432']]);ws['!cols']=COLS.map(()=>({wch:16}));for(let r=1;r<=300;r++)['E','F'].forEach(c=>{const k=c+(r+1);ws[k]=ws[k]||{t:'s',v:''};ws[k].t='s';ws[k].z='@'});ws['!ref']='A1:F301';
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'학생 명단');XLSX.writeFile(wb,'에이펙스_학생명단_양식.xlsx')},
