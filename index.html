@@ -1479,7 +1479,7 @@ Object.assign(ACT,{
     const ws=XLSX.utils.aoa_to_sheet([COLS,['홍길동','중2','평촌중','중2 문법반','01012345678','01098765432']]);ws['!cols']=COLS.map(()=>({wch:16}));for(let r=1;r<=300;r++)['E','F'].forEach(c=>{const k=c+(r+1);ws[k]=ws[k]||{t:'s',v:''};ws[k].t='s';ws[k].z='@'});ws['!ref']='A1:F301';
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'학생 명단');XLSX.writeFile(wb,'에이펙스_학생명단_양식.xlsx')},
   async mkacc(v){const s=st.students.find(x=>x.id===v);if(!s)return;try{const id=await makeStudentAccount(s);render();toast(`${s.name} 계정 · 아이디 ${id} · 비밀번호 0000`)}catch(e){console.error(e);toast('계정을 만들지 못했어요')}},
-  async pwset(v){const el=$('#pw-'+v),pw=el?el.value.trim():'';if(pw.length<4){toast('비밀번호는 4자 이상으로 넣어 주세요');return}
+  async pwset(v){const el=document.getElementById('pw-'+v),pw=el?el.value.trim():'';if(pw.length<4){toast('비밀번호는 4자 이상으로 넣어 주세요');return}
     try{await adminSetPw(v,pw);toast('비밀번호를 바꿨어요')}catch(e){console.error(e);toast('바꾸지 못했어요 · 저장된 비밀번호가 실제와 다를 수 있어요')}},
   async pwreset(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;
     try{await adminSetPw(v,'0000');toast(`${u.name} 비밀번호를 0000으로 되돌렸어요 · 다음 로그인 때 새로 정해요`)}catch(e){console.error(e);toast('재설정하지 못했어요 · 저장된 비밀번호가 실제와 다를 수 있어요')}},
@@ -1500,7 +1500,7 @@ function forcePw(){modal(`<div style="max-width:380px;margin:0 auto"><h3>비밀�
 const SNS_CFG={kakao:'9811bb1819791739e5f82390483586ed',naver:'rK1eBgZSLpWhGM920Jcu'};
 const SITE_URL=location.origin+'/';
 const telE164=v=>{const d=String(v||'').replace(/[^0-9]/g,'');return d.startsWith('0')?'+82'+d.slice(1):'+'+d};
-let RCV=null,CONF=null,CONF_PH='';
+let RCV=null,CONF=null,CONF_PH='',VERIFIED_PH='';
 function phoneApp(){return firebase.apps.find(a=>a.name==='phonev')||firebase.initializeApp(FB_CFG,'phonev')}
 function snsButtons(){return `<div class="sns">
   <button type="button" class="sns-k" data-act="snsin" data-v="kakao"><b>K</b>카카오로 시작하기</button>
@@ -1520,11 +1520,11 @@ function profileModal(){const u=AUTH.currentUser;const nm=(u&&u.displayName)||''
    <div class="f"><label id="pf-nl">학생 이름</label><input name="name" required value="${esc(nm)}"></div>
    <div class="grid g2"><div class="f"><label>학교</label><input name="school" required placeholder="예) 평촌중"></div><div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div></div>
    <div class="f"><label>휴대폰 번호 (본인 번호)</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input name="phone" required placeholder="010-0000-0000" inputmode="tel" style="flex:1"><button type="button" class="btn line" data-act="smssend" style="white-space:nowrap">인증번호 받기</button></div></div>
-   <div class="f"><label>인증번호</label><input name="code" inputmode="numeric" placeholder="문자로 받은 6자리" autocomplete="one-time-code"></div>
+   <div class="f" id="pf-code"><label>인증번호</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input name="code" inputmode="numeric" placeholder="문자로 받은 6자리" autocomplete="one-time-code" style="flex:1"><button type="button" class="btn line" data-act="smsverify" style="white-space:nowrap">인증하기</button></div></div>
    <div id="rcv"></div>
    <button class="btn" style="width:100%;padding:12px">가입 신청</button></form>
    <p style="text-align:center;margin-top:10px"><button class="btn sm line" data-act="mclose">나중에 하기</button> <button class="btn sm line" data-act="logout">로그아웃</button></p></div>`);
-  RCV=null;CONF=null}
+  RCV=null;CONF=null;VERIFIED_PH=''}
 function pendingModal(){modal(`<div style="text-align:center;padding:10px 4px"><div style="font-size:40px">⏳</div><h3>가입 승인을 기다리고 있어요</h3><p class="muted">학원에서 확인 후 승인하면 ${ME&&ME.want==='parent'?'학부모':'학생'} 화면을 쓸 수 있어요.<br>문의: 010-5514-0374</p><div class="row" style="justify-content:center;gap:8px;margin-top:14px"><button class="btn" data-act="mclose">확인</button><button class="btn line" data-act="logout">로그아웃</button></div></div>`)}
 async function snsReturn(){const q=new URLSearchParams(location.search);const code=q.get('code'),stt=q.get('state');
   if(!code||!/^(kakao|naver)$/.test(stt||''))return;
@@ -1548,7 +1548,20 @@ Object.assign(ACT,{
       CONF=await pa.auth().signInWithPhoneNumber(telE164(ph),RCV);CONF_PH=normPhone(ph);toast('인증번호를 보냈어요 · 가장 마지막에 받은 번호를 넣어 주세요');el.textContent='다시 받기';f.code.focus()}
     catch(e){console.error(e);toast(e.code==='auth/provider-already-linked'?'이미 인증된 계정이에요':e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':e.code==='auth/too-many-requests'?'요청이 너무 많아요 · 잠시 후 다시 해 주세요':e.code==='auth/invalid-phone-number'?'휴대폰 번호를 확인해 주세요':'문자를 보내지 못했어요 ('+(e.code||'오류')+')');try{RCV&&RCV.clear()}catch(_){}RCV=null}
     finally{setTimeout(()=>{el.disabled=false},3000)}},
-  async approve2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;const sel=$('#ap-'+v),cid=$('#apc-'+v);let sid=sel?sel.value:'';
+  async smsverify(v,el){const f=el.closest('form'),code=String(f.code.value||'').trim();
+    if(!CONF){toast('먼저 인증번호를 받아 주세요');return}
+    if(!/^\d{6}$/.test(code)){toast('인증번호 6자리를 넣어 주세요');return}
+    if(normPhone(f.phone.value)!==CONF_PH){toast('인증번호를 받은 번호와 입력한 번호가 달라요');return}
+    el.disabled=true;
+    try{await CONF.confirm(code);await phoneApp().auth().signOut()}
+    catch(e){el.disabled=false;toast(e.code==='auth/code-expired'?'인증번호 시간이 지났어요 · 다시 받아 주세요':e.code==='auth/invalid-verification-code'?'인증번호가 맞지 않아요 · 가장 마지막에 받은 번호를 넣어 주세요':'인증하지 못했어요 ('+(e.code||'오류')+')');return}
+    const pd=CONF_PH.replace(/[^0-9]/g,'');
+    try{await DB.collection('phones').doc(pd).set({uid:AUTH.currentUser.uid,ts:Date.now()})}
+    catch(e){el.disabled=false;toast('이미 가입된 휴대폰 번호예요 · 본인 번호로 가입해 주세요');return}
+    VERIFIED_PH=CONF_PH;f.phone.readOnly=true;const sb=f.querySelector('[data-act=smssend]');if(sb)sb.disabled=true;
+    $('#pf-code').innerHTML='<label>인증번호</label><div class="pill ok" style="display:inline-block;padding:8px 14px;font-size:14px">✓ 인증됨</div>';
+    toast('인증됐어요 · 가입 신청을 눌러 주세요')},
+  async approve2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;const sel=document.getElementById('ap-'+v),cid=document.getElementById('apc-'+v);let sid=sel?sel.value:'';
     if(!sid){toast('연결할 학생을 골라 주세요');return}
     try{if(sid==='new'){if(!cid||!cid.value){toast('새 학생의 반을 골라 주세요');return}
         const s={id:nid('s'),name:u.want==='parent'?(u.child||u.name):u.name,grade:u.grade||'',school:u.school||'',cid:cid.value,phone:u.want==='student'?(u.phone||''):'',pphone:u.want==='parent'?(u.phone||''):'',parentApp:false,kakao:true,code:newCode(),active:true,ts:Date.now()};
@@ -1565,13 +1578,8 @@ Object.assign(SUB,{
     try{await AUTH.createUserWithEmailAndPassword(idEmail(id),PWX(fd.pw));PEND_LOGIN_ID=id}
     catch(e){b.disabled=false;toast(e.code==='auth/email-already-in-use'?'이미 있는 아이디예요':'가입하지 못했어요')}},
   async profile(f,fd){
-    if(!CONF){toast('먼저 인증번호를 받아 주세요');return}
-    if(!/^\d{6}$/.test(String(fd.code||'').trim())){toast('인증번호 6자리를 넣어 주세요');return}
+    if(!VERIFIED_PH){toast('휴대폰 인증을 먼저 마쳐 주세요');return}
     const b=f.querySelector('button.btn:not(.line)');b.disabled=true;
-    if(CONF_PH&&normPhone(fd.phone)!==CONF_PH){b.disabled=false;toast('인증받은 번호와 입력한 번호가 달라요');return}
-    try{await CONF.confirm(String(fd.code).trim());await phoneApp().auth().signOut()}catch(e){b.disabled=false;toast(e.code==='auth/code-expired'?'인증번호 시간이 지났어요 · 다시 받아 주세요':e.code==='auth/invalid-verification-code'?'인증번호가 맞지 않아요 · 가장 마지막에 받은 번호를 넣어 주세요':'인증하지 못했어요 ('+(e.code||'오류')+')');return}
-    const pd=normPhone(fd.phone).replace(/[^0-9]/g,'');
-    try{await DB.collection('phones').doc(pd).set({uid:AUTH.currentUser.uid,ts:Date.now()})}catch(e){b.disabled=false;toast('이미 가입된 휴대폰 번호예요 · 본인 번호로 가입해 주세요');return}
     try{const u=AUTH.currentUser;const prov=(u.providerData||[]).map(p=>p.providerId).filter(p=>p!=='phone')[0]||(u.uid.startsWith('kakao:')?'kakao':u.uid.startsWith('naver:')?'naver':'');
       const sn=fd.name.trim();const doc={role:'pending',status:'pending',want:fd.want,name:fd.want==='parent'?sn+' 학부모':sn,child:sn,school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),phoneOk:true,via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
       await DB.collection('users').doc(u.uid).set(doc);ME={uid:u.uid,...doc};$('#modal').innerHTML='';render();pendingModal()}
