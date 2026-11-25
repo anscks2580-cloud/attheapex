@@ -387,20 +387,25 @@ body.has-phone #toast{bottom:auto;top:calc(var(--bar-h) + var(--top-h) + 14px)}
 .tm figcaption b{font-family:var(--hp-display);font-size:19px;letter-spacing:-.3px}
 .tm figcaption span{font-size:13px;font-weight:700;color:var(--hp-strong)}
 @media(max-width:1000px){.team-g{grid-template-columns:repeat(2,1fr);gap:12px}.team{padding:40px 0 44px}.tm figcaption b{font-size:17px}}
-.hA .hA-in{grid-template-columns:1fr 1.15fr;padding-top:44px;padding-bottom:28px}
-.hteam-h{font-size:12px;letter-spacing:2px;color:var(--hp-acc);font-weight:700;margin-bottom:10px}
+.hA .hA-in{grid-template-columns:1fr 1.15fr;gap:40px;padding-top:18px;padding-bottom:22px}
+.hA h1{font-size:clamp(30px,3.6vw,44px)}
+.hA .sub{margin-top:14px;font-size:15px}
+.hA .kick{margin-bottom:14px}
+.hA .cta{margin-top:20px}
+.hp.vA .hp-bar{height:58px}
+.hteam-h{font-size:13px;letter-spacing:1px;color:var(--hp-acc);font-weight:700;margin-bottom:8px}
 .hteam-g{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.hteam{max-width:440px;width:100%;justify-self:end}
+.hteam{max-width:420px;width:100%;justify-self:end}
 .hteam .tm img{aspect-ratio:1145/1374;object-fit:contain}
-.hteam .tm figcaption{padding:9px 12px 10px}
+.hteam .tm figcaption{padding:8px 12px 9px}
 .hteam .tm figcaption b{font-size:16px}
 .qrow-w{position:relative;padding-bottom:40px}
 .qrow{display:grid;grid-template-columns:repeat(4,1fr)}
 .qrow button{border-top:0;border-left:1px solid rgba(255,255,255,.1)}
 .qrow button:first-child{border-left:0}
 @media(max-width:900px){
-  .hA .hA-in{grid-template-columns:1fr;gap:22px;padding-top:30px;padding-bottom:18px}
-  .hA h1{font-size:30px}.hA .sub{margin-top:12px;font-size:14px}.hA .kick{margin-bottom:12px}
+  .hA .hA-in{grid-template-columns:1fr;gap:16px;padding-top:16px;padding-bottom:16px}
+  .hA h1{font-size:25px}.hA .sub{margin-top:8px;font-size:13.5px}.hA .kick{margin-bottom:8px;font-size:12px;padding:4px 10px}.hA .cta{margin-top:12px}
   .hteam-g{grid-template-columns:repeat(4,1fr);gap:6px}
   .hteam{max-width:none;justify-self:stretch}
   .hteam .tm figcaption{padding:6px 4px 7px;flex-direction:column;align-items:center;gap:0}
@@ -911,10 +916,10 @@ function viewHome(){
   const cta=`<div class="cta"><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
   const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
   const TEAM=`<figure class="tm"><img src="img/t-kmj.jpg" alt="김민정 원장"><figcaption><b>김민정</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bsa.jpg" alt="백선애 원장"><figcaption><b>백선애</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bjy.jpg" alt="백지연 선생님"><figcaption><b>백지연</b><span>선생님</span></figcaption></figure><figure class="tm"><img src="img/t-kbk.jpg" alt="김보경 선생님"><figcaption><b>김보경</b><span>선생님</span></figcaption></figure>`;
-  const TEAMSEC=`<section class="team" id="team"><div class="hp-wrap"><h2 class="hp-h2">에이펙스 강사진</h2><p class="tsub">정상(APEX)까지, 한 걸음씩 함께 가는 선생님들</p><div class="team-g">${TEAM}</div></div></section>`;
+  const TEAMSEC=`<section class="team" id="team"><div class="hp-wrap"><h2 class="hp-h2">Apex 강사진</h2><p class="tsub">정상(APEX)까지, 한 걸음씩 함께 가는 선생님들</p><div class="team-g">${TEAM}</div></div></section>`;
   let hero;
   if(V==='A')hero=`<section class="hA" id="hpTop">${chalk()}<div class="hp-wrap hA-in"><div><span class="kick">기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}</div>
-    <div class="hteam"><div class="hteam-h">에이펙스 강사진</div><div class="hteam-g">${TEAM}</div></div></div>
+    <div class="hteam"><div class="hteam-h">Apex 강사진</div><div class="hteam-g">${TEAM}</div></div></div>
     <div class="hp-wrap qrow-w"><div class="quick qrow">${Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}"><b>${q[0]}</b><small>${esc(q[1])}</small><span class="arr">→</span></button>`).join('')}</div></div></section>`;
   else if(V==='B')hero=`<section class="hB" id="hpTop"><div class="hp-wrap"><span class="tag"><i></i>기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}
     <div class="tiles">${Q.map(q=>`<button class="tile" data-act="${q[2]}" data-v="${q[3]}"><svg viewBox="0 0 24 24">${q[4]}</svg><b>${q[0]}</b><small>${esc(q[1])}</small></button>`).join('')}</div></div></section>`;
