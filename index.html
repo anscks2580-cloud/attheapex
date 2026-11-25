@@ -642,7 +642,7 @@ const FB_CFG={apiKey:"AIzaSyBpoblbNvzMA4-tilBfdfn65yK4RgUUmfo",authDomain:"atthe
 firebase.initializeApp(FB_CFG);
 const AUTH=firebase.auth(),DB=firebase.firestore();
 const ID_DOMAIN='attheapex.co.kr',ADMIN_EMAIL='admin@attheapex.co.kr';
-const idEmail=id=>String(id).trim().toLowerCase()+'@'+ID_DOMAIN;
+const idEmail=id=>{id=String(id).trim().normalize('NFC');const l=id.toLowerCase();return (/^[a-z0-9._-]+$/.test(l)?l:'k'+Array.from(new TextEncoder().encode(id)).map(b=>b.toString(16).padStart(2,'0')).join(''))+'@'+ID_DOMAIN};
 let ME=null,AUTH_READY=false;
 const KEY='apexLive_v1';
 let st=seed();
@@ -691,7 +691,7 @@ function startSubs(){UNSUB.forEach(u=>u());UNSUB=[];LOADED={};
   if(!ME)return;
   const r=ME.role;
   if(r==='admin'||r==='teacher')['students','videos','homework','reports','absences','progress','attendance','schedule','daily','surveys'].forEach(c=>sub(c,DB.collection(c)));
-  if(r==='admin'){
+  if(r==='admin'){loadSecrets();
     UNSUB.push(DB.collection('consults').onSnapshot(s=>{st.consults=s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>TS(b)-TS(a));later()},e=>console.warn('consults',e.code)));
     UNSUB.push(DB.collection('users').onSnapshot(s=>{st.users=s.docs.map(d=>({...d.data(),id:d.id}));later()},e=>console.warn('users',e.code)));
   }
@@ -703,7 +703,7 @@ function startSubs(){UNSUB.forEach(u=>u());UNSUB=[];LOADED={};
 }
 AUTH.onAuthStateChanged(async u=>{
   AUTH_READY=true;
-  if(!u){ME=null;resetData();startSubs();if(st.role!=='home'){st.role='home';ENTER=ENTER_ROLE=true}render();return}
+  if(!u){ME=null;SECRETS={};resetData();startSubs();if(st.role!=='home'){st.role='home';ENTER=ENTER_ROLE=true}render();return}
   try{
     const ref=DB.collection('users').doc(u.uid);let d=await ref.get();
     if(!d.exists&&u.email===ADMIN_EMAIL){await ref.set({role:'admin',name:'관리자',loginId:'admin',active:true,created:Date.now()});d=await ref.get()}
@@ -713,8 +713,8 @@ AUTH.onAuthStateChanged(async u=>{
     if(ME.role==='student')st.sel.student=ME.sid;
     if(ME.role==='parent')st.sel.parent=ME.sid;
     resetData();startSubs();
-    if(GO_ROLE){GO_ROLE=false;st.role=ME.role;ENTER=ENTER_ROLE=true;setTimeout(()=>onEnterRole(ME.role),1500)}
-    render();
+    if(GO_ROLE||ME.mustChange){GO_ROLE=false;st.role=ME.role;ENTER=ENTER_ROLE=true;if(!ME.mustChange)setTimeout(()=>{if(!(ME&&ME.mustChange))onEnterRole(ME.role)},1500)}
+    render();if(ME.mustChange)setTimeout(()=>{if(ME&&ME.mustChange)forcePw()},60);
   }catch(e){console.error(e);toast('로그인 정보를 불러오지 못했어요')}
 });
 let GO_ROLE=false;
@@ -753,7 +753,7 @@ const todayNote=()=>noClassToday()?'<span class="pill">오늘은 수업 요일�
 
 function toast(m){const box=$('#toast');while(box.children.length>=2)box.firstChild.remove();const d=document.createElement('div');d.className='toastmsg';d.textContent=m;$('#toast').appendChild(d);setTimeout(()=>d.remove(),3400)}
 function modal(html,wide){$('#modal').innerHTML=`<div class="mb" data-act="mclosebg"><div class="md ${wide?'wide':''}"><button class="x" data-act="mclose">×</button>${html}</div></div>`}
-function closeModal(){plStop();PL=null;$('#modal').innerHTML='';render()}
+function closeModal(){if(ME&&ME.mustChange){forcePw();return}plStop();PL=null;$('#modal').innerHTML='';render()}
 
 /* 학부모 휴대폰 알림 */
 const CH={app:{n:'에이펙스 앱',c:'var(--pri)',i:'A'},kakao:{n:'카카오톡 알림톡',c:'#e0b400',i:'톡'},sms:{n:'문자',c:'#16a34a',i:'문자'}};
@@ -1305,7 +1305,7 @@ function vAaccounts(){
     <div class="f"><label>연결할 학생 (학생 · 학부모)</label><select name="sid">${ss.map(s=>`<option value="${s.id}">${esc(s.name)} (${esc(s.grade)})</option>`).join('')||'<option value="">학생 관리에서 먼저 학생을 등록해 주세요</option>'}</select></div>
     <div class="f"><label>이름 (선생님 · 관리부)</label><input name="name" placeholder="예) 홍길동T"></div>
     <div class="f"><label>아이디</label><input name="id" required autocomplete="off" placeholder="영문 · 숫자 3자 이상"></div>
-    <div class="f"><label>비밀번호</label><input name="pw" required minlength="6" autocomplete="new-password" placeholder="6자 이상"></div>
+    <div class="f"><label>비밀번호</label><input name="pw" required minlength="4" autocomplete="new-password" placeholder="4자 이상"></div>
     <div class="f" style="display:flex;align-items:flex-end"><button class="btn" style="width:100%">계정 만들기</button></div></div>
     <p class="muted" style="margin:6px 0 0">학생 · 학부모 이름은 연결한 학생 이름으로 자동으로 들어가요. 비밀번호는 로그인 후 오른쪽 위 「비밀번호 변경」에서 직접 바꿀 수 있어요.</p></form>
   <div class="card tw"><table><tr><th>구분</th><th>이름</th><th>아이디</th><th>연결 학생</th><th>상태</th><th></th></tr>${us.map(u=>`<tr style="${u.active===false?'opacity:.5':''}"><td>${RN[u.role]||esc(u.role)}</td><td><b>${esc(u.name||'')}</b></td><td>${esc(u.loginId||'')}</td><td>${u.sid?esc(stu(u.sid).name):'-'}</td><td>${u.active===false?'<span class="pill">사용 중지</span>':'<span class="pill ok">사용 중</span>'}</td><td>${u.loginId==='admin'||u.id===(ME&&ME.uid)?'':`<button class="btn sm line" data-act="accact" data-v="${u.id}">${u.active===false?'다시 사용':'사용 중지'}</button>`}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">계정이 없어요</td></tr>'}</table></div>`;
@@ -1358,18 +1358,18 @@ function openPlayer(vid){
   }).catch(()=>toast('영상 플레이어를 불러오지 못했어요'));
 }
 Object.assign(ACT,{
-  login(){modal(`<div style="max-width:360px;margin:0 auto"><img src="img/mark-black.png" alt="" style="height:44px;display:block;margin:4px auto 10px"><h3 style="text-align:center">로그인</h3><form data-form="login"><div class="f"><label>아이디</label><input name="id" required autocomplete="username" autocapitalize="off"></div><div class="f"><label>비밀번호</label><input type="password" name="pw" required autocomplete="current-password"></div><button class="btn" style="width:100%;padding:12px">로그인</button></form><p class="muted" style="text-align:center;margin-top:12px">아이디와 비밀번호는 학원에서 발급해 드려요</p></div>`)},
+  login(){modal(`<div style="max-width:360px;margin:0 auto"><img src="img/mark-black.png" alt="" style="height:44px;display:block;margin:4px auto 10px"><h3 style="text-align:center">로그인</h3><form data-form="login"><div class="f"><label>아이디</label><input name="id" required autocomplete="username" autocapitalize="off"></div><div class="f"><label>비밀번호</label><input type="password" name="pw" required autocomplete="current-password"></div><button class="btn" style="width:100%;padding:12px">로그인</button></form><p class="muted" style="text-align:center;margin-top:12px">학생 아이디는 이름이에요 · 처음 비밀번호는 0000</p></div>`)},
   logout(){AUTH.signOut().then(()=>toast('로그아웃했어요'))},
   mypage(){if(ME)ACT.role(ME.role);else ACT.login()},
-  pwchange(){modal(`<h3>비밀번호 변경</h3><form data-form="pw"><div class="f"><label>새 비밀번호</label><input type="password" name="pw" required minlength="6" autocomplete="new-password"></div><div class="f"><label>새 비밀번호 확인</label><input type="password" name="pw2" required minlength="6" autocomplete="new-password"></div><button class="btn">바꾸기</button></form>`)},
+  pwchange(){modal(`<h3>비밀번호 변경</h3><form data-form="pw"><div class="f"><label>새 비밀번호</label><input type="password" name="pw" required minlength="4" autocomplete="new-password"></div><div class="f"><label>새 비밀번호 확인</label><input type="password" name="pw2" required minlength="4" autocomplete="new-password"></div><button class="btn">바꾸기</button></form>`)},
   accact(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;DB.collection('users').doc(v).update({active:u.active===false}).then(()=>toast(u.active===false?'다시 사용할 수 있어요':'사용을 멈췄어요 · 이 계정으로는 로그인되지 않아요')).catch(()=>toast('바꾸지 못했어요'))},
   cdel(v){if(act().some(s=>s.cid===v)){toast('이 반에 학생이 있어요 · 학생 반을 먼저 옮겨 주세요');return}st.classes=st.classes.filter(c=>c.id!==v);render();toast('반을 지웠어요')},
   ndel(v){st.notices=st.notices.filter(n=>n.id!==v);render();toast('공지를 지웠어요')},
   pldone(v){const s=selStu('student');st.progress[s.id+'|'+v]={max:0,done:true};closeModal();toast('시청 완료로 기록했어요')},
 });
 Object.assign(SUB,{
-  async login(f,fd){const b=f.querySelector('button');b.disabled=true;GO_ROLE=true;try{await AUTH.signInWithEmailAndPassword(idEmail(fd.id),fd.pw);$('#modal').innerHTML=''}catch(e){GO_ROLE=false;toast('아이디 또는 비밀번호를 확인해 주세요')}finally{b.disabled=false}},
-  async pw(f,fd){if(fd.pw!==fd.pw2){toast('두 비밀번호가 달라요');return}try{await AUTH.currentUser.updatePassword(fd.pw);closeModal();toast('비밀번호를 바꿨어요')}catch(e){toast(e.code==='auth/requires-recent-login'?'보안을 위해 로그아웃 후 다시 로그인한 다음 바꿔 주세요':'바꾸지 못했어요')}},
+  async login(f,fd){const b=f.querySelector('button');b.disabled=true;GO_ROLE=true;try{await signInAny(AUTH,fd.id,fd.pw);if(!$('#modal [data-form=pwfirst]'))$('#modal').innerHTML=''}catch(e){GO_ROLE=false;toast('아이디 또는 비밀번호를 확인해 주세요')}finally{b.disabled=false}},
+  async pw(f,fd){if(fd.pw!==fd.pw2){toast('두 비밀번호가 달라요');return}try{await AUTH.currentUser.updatePassword(PWX(fd.pw));if(ME.role==='student'||ME.role==='parent')await DB.collection('secrets').doc(ME.uid).set({pw:fd.pw,updated:Date.now()});closeModal();toast('비밀번호를 바꿨어요')}catch(e){toast(e.code==='auth/requires-recent-login'?'보안을 위해 로그아웃 후 다시 로그인한 다음 바꿔 주세요':'바꾸지 못했어요')}},
   async addacc(f,fd){
     const id=String(fd.id||'').trim().toLowerCase();if(!/^[a-z0-9._-]{3,30}$/.test(id)){toast('아이디는 영문 · 숫자 3자 이상으로 넣어 주세요');return}
     if((st.users||[]).some(u=>u.loginId===id)){toast('이미 있는 아이디예요');return}
@@ -1377,21 +1377,109 @@ Object.assign(SUB,{
     if(fd.role==='student'||fd.role==='parent'){const s=st.students.find(x=>x.id===fd.sid);if(!s){toast('연결할 학생을 골라 주세요');return}sid=s.id;name=s.name+(fd.role==='parent'?' 학부모':'')}
     else if(!name){toast('이름을 넣어 주세요');return}
     const b=f.querySelector('button');b.disabled=true;b.textContent='만드는 중…';
-    try{const uid=await makeAuthUser(id,fd.pw);const doc={role:fd.role,name,loginId:id,active:true,created:Date.now()};if(sid)doc.sid=sid;if(fd.role==='teacher')doc.tid=uid;
-      await DB.collection('users').doc(uid).set(doc);
+    try{const uid=await makeAuthUser(id,PWX(fd.pw));const doc={role:fd.role,name,loginId:id,active:true,created:Date.now()};if(sid)doc.sid=sid;if(fd.role==='teacher')doc.tid=uid;
+      await DB.collection('users').doc(uid).set(doc);if(sid)await DB.collection('secrets').doc(uid).set({pw:fd.pw,updated:Date.now()});
       if(fd.role==='teacher'){st.teachers.push({id:uid,name,branch:'본관'});save()}
       f.reset();toast(`${name} 계정을 만들었어요 · 아이디 ${id}`)}
-    catch(e){console.error(e);toast(e.code==='auth/email-already-in-use'?'이미 있는 아이디예요':e.code==='auth/weak-password'?'비밀번호는 6자 이상이어야 해요':'계정을 만들지 못했어요')}
+    catch(e){console.error(e);toast(e.code==='auth/email-already-in-use'?'이미 있는 아이디예요':'계정을 만들지 못했어요')}
     finally{b.disabled=false;b.textContent='계정 만들기'}},
   addcls(f,fd){if(!fd.tid){toast('담당 선생님을 먼저 만들어 주세요');return}const days='월화수목금토일'.split('').filter(d=>fd['d_'+d]).join('');st.classes.push({id:nid('c'),name:fd.name.trim(),branch:'본관',days:days||'-',tid:fd.tid});render();toast('반을 만들었어요')},
   addnotice(f,fd){st.notices.unshift({id:nid('n'),title:fd.title.trim(),text:fd.text||'',date:fd.date||TODAY,ts:Date.now()});render();toast('공지를 올렸어요 · 홈페이지와 학부모 화면에 바로 보여요')},
 });
+
+/* ===== 학생 명단 · 비밀번호 ===== */
+const PWX=p=>String(p)+'#apex';
+const hexU=s=>Array.from(new TextEncoder().encode(s)).map(b=>b.toString(16).padStart(2,'0')).join('');
+function makerAuth(){const app2=firebase.apps.find(a=>a.name==='maker')||firebase.initializeApp(FB_CFG,'maker');return app2.auth()}
+async function signInAny(a,id,pw){try{return await a.signInWithEmailAndPassword(idEmail(id),PWX(pw))}catch(e){return await a.signInWithEmailAndPassword(idEmail(id),pw)}}
+let SECRETS={};
+function loadSecrets(){if(!ME||ME.role!=='admin')return;UNSUB.push(DB.collection('secrets').onSnapshot(s=>{SECRETS={};s.docs.forEach(d=>SECRETS[d.id]=d.data());later()},e=>console.warn('secrets',e.code)))}
+function accOf(sid){return (st.users||[]).find(u=>u.role==='student'&&u.sid===sid)}
+function uniqueId(name){const used=new Set((st.users||[]).map(u=>u.loginId));let id=name,n=2;while(used.has(id)){id=name+n;n++}used.add(id);return id}
+async function makeStudentAccount(s){
+  const id=uniqueId(s.name);const a=makerAuth();await a.setPersistence(firebase.auth.Auth.Persistence.NONE);
+  const c=await a.createUserWithEmailAndPassword(idEmail(id),PWX('0000'));const uid=c.user.uid;await a.signOut();
+  const doc={role:'student',name:s.name,loginId:id,sid:s.id,active:true,mustChange:true,created:Date.now()};
+  await DB.collection('users').doc(uid).set(doc);await DB.collection('secrets').doc(uid).set({pw:'0000',updated:Date.now()});
+  st.users.push({...doc,id:uid});return id}
+async function adminSetPw(uid,newPw){
+  const u=(st.users||[]).find(x=>x.id===uid);if(!u)throw new Error('nouser');
+  const cur=SECRETS[uid]&&SECRETS[uid].pw;if(cur==null)throw new Error('nopw');
+  const a=makerAuth();await a.setPersistence(firebase.auth.Auth.Persistence.NONE);
+  const cred=await signInAny(a,u.loginId,cur);await cred.user.updatePassword(PWX(newPw));await a.signOut();
+  await DB.collection('secrets').doc(uid).set({pw:String(newPw),updated:Date.now()});
+  await DB.collection('users').doc(uid).update({mustChange:String(newPw)==='0000'});
+}
+let XLSXP=null;function loadXLSX(){return XLSXP||(XLSXP=new Promise((ok,no)=>{if(window.XLSX)return ok();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=ok;s.onerror=()=>{XLSXP=null;no()};document.head.appendChild(s)}))}
+const COLS=['이름','학년','학교','반','학생 연락처','보호자 연락처'];
+function vAstudents(){
+  const list=st.students.filter(s=>st.showLeft||s.active);
+  return `<h2>학생 관리</h2><p class="desc">엑셀로 한꺼번에 올리면 학생 계정이 바로 만들어져요 · 아이디는 이름, 처음 비밀번호는 0000 · 학생은 처음 로그인할 때 비밀번호를 바꿔야 시작할 수 있어요</p>
+  <div class="card"><h3>엑셀로 학생 명단 올리기</h3>
+    <p class="muted" style="margin:0 0 10px">첫 줄 제목: ${COLS.join(' · ')} · 반 이름이 없으면 새 반으로 만들어져요 · 같은 이름 · 같은 학교 학생은 건너뛰어요</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn line" data-act="xltpl">양식 내려받기</button><label class="btn" style="cursor:pointer">엑셀 파일 올리기<input type="file" id="xlfile" accept=".xlsx,.xls,.csv" style="display:none" data-chg="xlfile"></label></div>
+    <div id="xlprog" class="muted" style="margin-top:10px"></div></div>
+  <form class="card" data-form="addstu"><h3>한 명씩 추가</h3><div class="grid g3">
+    <div class="f"><label>이름</label><input name="name" required></div>
+    <div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div>
+    <div class="f"><label>학교</label><input name="school" placeholder="예) 평촌중"></div>
+    <div class="f"><label>반</label><select name="cid">${st.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')||'<option value="">반 · 공지 관리에서 반을 먼저 만들어 주세요</option>'}</select></div>
+    <div class="f"><label>학생 연락처</label><input name="phone" placeholder="010-0000-0000"></div>
+    <div class="f"><label>보호자 연락처</label><input name="pphone" placeholder="010-0000-0000"></div></div>
+    <button class="btn">학생 추가 · 계정 만들기</button></form>
+  <div class="card tw"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>${list.filter(s=>s.active).length}명</b><label class="row muted"><input type="checkbox" data-chg="showleft" ${st.showLeft?'checked':''}> 퇴원생도 보기</label></div>
+  <table><tr><th>이름</th><th>학년</th><th>학교</th><th>반</th><th>학생 연락처</th><th>보호자 연락처</th><th>출결 코드</th><th>아이디</th><th>비밀번호</th><th></th></tr>${list.map(s=>{const u=accOf(s.id),sec=u&&SECRETS[u.id];return `<tr style="${s.active?'':'opacity:.5'}"><td><b>${esc(s.name)}</b>${s.active?'':' <span class="pill">퇴원</span>'}</td><td>${esc(s.grade)}</td><td>${esc(s.school||'')}</td><td><select data-chg="scls" data-id="${s.id}" style="min-width:120px">${st.classes.map(c=>`<option value="${c.id}" ${c.id===s.cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></td><td>${esc(s.phone||'')}</td><td>${esc(s.pphone||'')}</td><td>${esc(s.code||'')}</td>
+    <td>${u?esc(u.loginId):`<button class="btn sm line" data-act="mkacc" data-v="${s.id}">계정 만들기</button>`}</td>
+    <td>${u?`<div class="row" style="gap:4px;flex-wrap:nowrap"><input id="pw-${u.id}" value="${esc(sec?sec.pw:'')}" style="width:90px">${u.mustChange?'<span class="pill warn">변경 전</span>':''}</div>`:''}</td>
+    <td style="white-space:nowrap">${u?`<button class="btn sm" data-act="pwset" data-v="${u.id}">저장</button> <button class="btn sm line" data-act="pwreset" data-v="${u.id}">재설정</button> `:''}<button class="btn sm line" data-act="leave" data-v="${s.id}">${s.active?'퇴원':'복귀'}</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">등록된 학생이 없어요</td></tr>'}</table></div>`;
+}
+function newCode(){let code;do{code=String(1000+Math.floor(Math.random()*9000))}while(st.students.some(s=>s.code===code));return code}
+const normPhone=v=>String(v==null?'':v).replace(/[^0-9]/g,'').replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3');
+async function importRows(rows){
+  const P=t=>{const e=$('#xlprog');if(e)e.textContent=t};
+  let made=0,skip=0,fail=[];
+  for(let i=0;i<rows.length;i++){const r=rows[i];const name=String(r['이름']||'').trim();if(!name)continue;
+    const school=String(r['학교']||'').trim();
+    if(st.students.some(s=>s.name===name&&(s.school||'')===school&&s.active)){skip++;continue}
+    let cname=String(r['반']||'').trim(),c=st.classes.find(x=>x.name===cname);
+    if(!c&&cname){c={id:nid('c'),name:cname,branch:'본관',days:'-',tid:''};st.classes.push(c)}
+    const s={id:nid('s'),name,grade:String(r['학년']||'').trim(),school,cid:c?c.id:'',phone:normPhone(r['학생 연락처']),pphone:normPhone(r['보호자 연락처']),parentApp:false,kakao:true,code:newCode(),active:true,ts:Date.now()};
+    st.students.push(s);save();
+    P(`${i+1} / ${rows.length} · ${name} 계정 만드는 중…`);
+    try{await makeStudentAccount(s);made++}catch(e){console.error(e);fail.push(name)}
+  }
+  render();
+  const msg=`${made}명 등록 완료${skip?` · ${skip}명은 이미 있어서 건너뜀`:''}${fail.length?` · 계정 실패: ${fail.join(', ')} (명단에서 「계정 만들기」로 다시 시도)`:''}`;
+  setTimeout(()=>{P(msg)},50);toast(msg);
+}
+Object.assign(ACT,{
+  async xltpl(){try{await loadXLSX()}catch(e){toast('엑셀 도구를 불러오지 못했어요');return}
+    const ws=XLSX.utils.aoa_to_sheet([COLS,['홍길동','중2','평촌중','중2 문법반','010-1234-5678','010-9876-5432']]);ws['!cols']=COLS.map(()=>({wch:16}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'학생 명단');XLSX.writeFile(wb,'에이펙스_학생명단_양식.xlsx')},
+  async mkacc(v){const s=st.students.find(x=>x.id===v);if(!s)return;try{const id=await makeStudentAccount(s);render();toast(`${s.name} 계정 · 아이디 ${id} · 비밀번호 0000`)}catch(e){console.error(e);toast('계정을 만들지 못했어요')}},
+  async pwset(v){const el=$('#pw-'+v),pw=el?el.value.trim():'';if(pw.length<4){toast('비밀번호는 4자 이상으로 넣어 주세요');return}
+    try{await adminSetPw(v,pw);toast('비밀번호를 바꿨어요')}catch(e){console.error(e);toast('바꾸지 못했어요 · 저장된 비밀번호가 실제와 다를 수 있어요')}},
+  async pwreset(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;
+    try{await adminSetPw(v,'0000');toast(`${u.name} 비밀번호를 0000으로 되돌렸어요 · 다음 로그인 때 새로 정해요`)}catch(e){console.error(e);toast('재설정하지 못했어요 · 저장된 비밀번호가 실제와 다를 수 있어요')}},
+});
+Object.assign(SUB,{
+  async addstu(f,fd){if(!fd.cid){toast('반 · 공지 관리에서 반을 먼저 만들어 주세요');return}
+    const s={id:nid('s'),name:fd.name.trim(),grade:fd.grade,school:(fd.school||'').trim(),cid:fd.cid,phone:normPhone(fd.phone),pphone:normPhone(fd.pphone),parentApp:false,kakao:true,code:newCode(),active:true,ts:Date.now()};
+    st.students.push(s);save();f.reset();
+    try{const id=await makeStudentAccount(s);render();toast(`${s.name} 등록 · 아이디 ${id} · 비밀번호 0000 · 출결 코드 ${s.code}`)}catch(e){console.error(e);render();toast('학생은 등록했지만 계정을 만들지 못했어요 · 명단에서 「계정 만들기」를 눌러 주세요')}},
+  async pwfirst(f,fd){const p=String(fd.pw||'');if(p.length<4){toast('4자 이상으로 정해 주세요');return}if(p==='0000'){toast('0000이 아닌 비밀번호로 정해 주세요');return}if(p!==fd.pw2){toast('두 비밀번호가 달라요');return}
+    const b=f.querySelector('button');b.disabled=true;
+    try{await AUTH.currentUser.updatePassword(PWX(p));await DB.collection('secrets').doc(ME.uid).set({pw:p,updated:Date.now()});await DB.collection('users').doc(ME.uid).update({mustChange:false});ME.mustChange=false;$('#modal').innerHTML='';render();toast('비밀번호를 정했어요 · 이제 시작할 수 있어요')}
+    catch(e){console.error(e);b.disabled=false;toast(e.code==='auth/requires-recent-login'?'로그아웃 후 다시 로그인해서 바꿔 주세요':'바꾸지 못했어요')}},
+});
+function forcePw(){modal(`<div style="max-width:380px;margin:0 auto"><h3>비밀번호를 새로 정해 주세요</h3><p class="muted">처음 로그인했거나 비밀번호가 0000으로 재설정됐어요. 새 비밀번호를 정해야 시작할 수 있어요.</p><form data-form="pwfirst"><div class="f"><label>새 비밀번호 (4자 이상)</label><input type="password" name="pw" required autocomplete="new-password"></div><div class="f"><label>새 비밀번호 확인</label><input type="password" name="pw2" required autocomplete="new-password"></div><button class="btn" style="width:100%;padding:12px">비밀번호 정하고 시작하기</button></form><p style="text-align:center;margin-top:10px"><button class="btn sm line" data-act="logout">로그아웃</button></p></div>`);const x=$('#modal .x');if(x)x.remove();const mb=$('#modal .mb');if(mb)mb.removeAttribute('data-act')}
 
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f)f(el.dataset.v,el,e)});
 document.addEventListener('change',e=>{const el=e.target,k=el.dataset.chg;if(!k)return;
   if(k==='sel'){st.sel[el.dataset.k]=el.value;render();if(el.dataset.k==='student')onEnterRole('student')}
   else if(k==='branch'){st.branch=el.value;render()}
   else if(k==='showleft'){st.showLeft=el.checked;render()}
+  else if(k==='xlfile'){const file=el.files&&el.files[0];el.value='';if(!file)return;(async()=>{try{await loadXLSX()}catch(e){toast('엑셀 도구를 불러오지 못했어요');return}const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}).map(r=>{const o={};for(const k in r)o[String(k).replace(/\s+/g,' ').trim()]=r[k];return o});if(!rows.length||!('이름' in rows[0])){toast('첫 줄에 「이름」 제목이 있어야 해요 · 양식을 내려받아 써 주세요');return}if(!confirm(rows.length+'명을 등록하고 계정을 만들까요?'))return;importRows(rows)})();return}
   else if(k==='ctid'){const c=cls(el.dataset.id);c.tid=el.value;render();toast('담당 선생님을 바꿨어요')}
   else if(k==='scls'){stu(el.dataset.id).cid=el.value;render();toast('반이 바뀌었어요 · 영상 권한과 출결 반도 함께 바뀌어요')}
   else if(k==='vperm'){const v=st.videos.find(x=>x.id===el.dataset.id),c=el.dataset.c;v.classIds=el.checked?[...v.classIds,c]:v.classIds.filter(x=>x!==c);save();toast(el.checked?`${cls(c).name} 학생들에게 영상이 열렸어요`:`${cls(c).name} 학생들에게서 영상이 숨겨졌어요`)}

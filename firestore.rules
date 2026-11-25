@@ -15,6 +15,12 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signed() && (request.auth.uid == uid || isAdmin());
       allow write: if isAdmin();
+      allow update: if signed() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChange']) && request.resource.data.mustChange == false;
+    }
+    // 학생 · 학부모 비밀번호 (관리부만 열람)
+    match /secrets/{uid} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() || (signed() && request.auth.uid == uid);
     }
     // 홈페이지에 보이는 정보
     match /classes/{id}  { allow read: if true; allow write: if isAdmin(); }
