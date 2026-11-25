@@ -765,7 +765,7 @@ const todayNote=()=>noClassToday()?'<span class="pill">오늘은 수업 요일�
 
 function toast(m){const box=$('#toast');while(box.children.length>=2)box.firstChild.remove();const d=document.createElement('div');d.className='toastmsg';d.textContent=m;$('#toast').appendChild(d);setTimeout(()=>d.remove(),3400)}
 function modal(html,wide){$('#modal').innerHTML=`<div class="mb" data-act="mclosebg"><div class="md ${wide?'wide':''}"><button class="x" data-act="mclose">×</button>${html}</div></div>`}
-function closeModal(){if(ME&&ME.mustChange){forcePw();return}if(ME&&ME.role==='none'){profileModal();return}plStop();PL=null;$('#modal').innerHTML='';render()}
+function closeModal(){if(ME&&ME.mustChange){forcePw();return}plStop();PL=null;$('#modal').innerHTML='';render()}
 
 /* 학부모 휴대폰 알림 */
 const CH={app:{n:'에이펙스 앱',c:'var(--pri)',i:'A'},kakao:{n:'카카오톡 알림톡',c:'#e0b400',i:'톡'},sms:{n:'문자',c:'#16a34a',i:'문자'}};
@@ -870,7 +870,7 @@ function viewHome(){
     ['공지사항',(st.popup.on&&st.popup.title?st.popup.title:(st.notices[0]?st.notices[0].title:'학원 소식'))+' 안내','scrollto','notice','<path d="M4 10v4h3l5 4V6L7 10H4zM16 9a4 4 0 0 1 0 6"/>'],
     ['상담신청','남겨 주시면 바로 연락드립니다','scrollto','consultSec','<path d="M4 5h16v11H8l-4 4zM9 10h6"/>']];
   const nav=Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}">${q[0]}</button>`).join('');
-  const login=`<span class="hp-auth">${ME?'':'<button class="hp-login hp-join" data-act="signup">회원가입</button>'}<button class="hp-login" data-act="hpvideo">${ME?'내 페이지':'로그인'}</button></span>`;
+  const login=`<span class="hp-auth">${ME?'':'<button class="hp-login hp-join" data-act="signup">회원가입</button>'}<button class="hp-login" data-act="hpvideo">${ME?(ME.role==='none'?'가입 마무리':ME.role==='pending'?'승인 대기':'내 페이지'):'로그인'}</button></span>`;
   const head=`<header class="hp-head"><div class="hp-wrap hp-bar"><button class="hp-logo" data-act="scrollto" data-v="hpTop"><img src="img/mark-black.png" alt=""><b>${NAME}</b></button><nav class="hp-nav">${nav}</nav>${login}</div></header>`;
   const cta=`<div class="cta"><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
   const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
@@ -1515,15 +1515,15 @@ function signupModal(){modal(`<div style="max-width:380px;margin:0 auto"><h3 sty
 function profileModal(){const u=AUTH.currentUser;const nm=(u&&u.displayName)||'';
   modal(`<div style="max-width:420px;margin:0 auto"><h3>가입 정보 입력</h3><p class="muted" style="margin-top:-4px">입력하고 휴대폰 인증을 마치면 학원에서 확인 후 승인해 드려요</p>
   <form data-form="profile">
-   <div class="f"><label>구분</label><div class="row" style="gap:16px"><label class="row" style="gap:5px"><input type="radio" name="want" value="student" checked> 학생</label><label class="row" style="gap:5px"><input type="radio" name="want" value="parent"> 학부모</label></div></div>
-   <div class="grid g2"><div class="f"><label>이름</label><input name="name" required value="${esc(nm)}"></div><div class="f"><label>학생 이름 (학부모만)</label><input name="child" placeholder="자녀 이름"></div></div>
+   <div class="f"><label>구분</label><div class="row" style="gap:16px"><label class="row" style="gap:5px"><input type="radio" name="want" value="student" checked onchange="document.getElementById('pf-nl').textContent='학생 이름'"> 학생</label><label class="row" style="gap:5px"><input type="radio" name="want" value="parent" onchange="document.getElementById('pf-nl').textContent='자녀(학생) 이름'"> 학부모</label></div></div>
+   <div class="f"><label id="pf-nl">학생 이름</label><input name="name" required value="${esc(nm)}"></div>
    <div class="grid g2"><div class="f"><label>학교</label><input name="school" required placeholder="예) 평촌중"></div><div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div></div>
    <div class="f"><label>휴대폰 번호</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input name="phone" required placeholder="010-0000-0000" inputmode="tel" style="flex:1"><button type="button" class="btn line" data-act="smssend" style="white-space:nowrap">인증번호 받기</button></div></div>
    <div class="f"><label>인증번호</label><input name="code" inputmode="numeric" placeholder="문자로 받은 6자리" autocomplete="one-time-code"></div>
    <div id="rcv"></div>
    <button class="btn" style="width:100%;padding:12px">가입 신청</button></form>
-   <p style="text-align:center;margin-top:10px"><button class="btn sm line" data-act="logout">취소하고 로그아웃</button></p></div>`);
-  const x=$('#modal .x');if(x)x.remove();const mb=$('#modal .mb');if(mb)mb.removeAttribute('data-act');RCV=null;CONF=null}
+   <p style="text-align:center;margin-top:10px"><button class="btn sm line" data-act="mclose">나중에 하기</button> <button class="btn sm line" data-act="logout">로그아웃</button></p></div>`);
+  RCV=null;CONF=null}
 function pendingModal(){modal(`<div style="text-align:center;padding:10px 4px"><div style="font-size:40px">⏳</div><h3>가입 승인을 기다리고 있어요</h3><p class="muted">학원에서 확인 후 승인하면 ${ME&&ME.want==='parent'?'학부모':'학생'} 화면을 쓸 수 있어요.<br>문의: 010-5514-0374</p><div class="row" style="justify-content:center;gap:8px;margin-top:14px"><button class="btn" data-act="mclose">확인</button><button class="btn line" data-act="logout">로그아웃</button></div></div>`)}
 async function snsReturn(){const q=new URLSearchParams(location.search);const code=q.get('code'),stt=q.get('state');
   if(!code||!/^(kakao|naver)$/.test(stt||''))return;
@@ -1545,7 +1545,7 @@ Object.assign(ACT,{
     el.disabled=true;
     try{if(!RCV){RCV=new firebase.auth.RecaptchaVerifier('rcv',{size:'invisible'})}
       CONF=await AUTH.currentUser.linkWithPhoneNumber(telE164(ph),RCV);toast('인증번호를 보냈어요');el.textContent='다시 받기';f.code.focus()}
-    catch(e){console.error(e);toast(e.code==='auth/provider-already-linked'?'이미 인증된 계정이에요':e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':e.code==='auth/too-many-requests'?'요청이 너무 많아요 · 잠시 후 다시 해 주세요':e.code==='auth/invalid-phone-number'?'휴대폰 번호를 확인해 주세요':'문자를 보내지 못했어요');try{RCV&&RCV.clear()}catch(_){}RCV=null}
+    catch(e){console.error(e);toast(e.code==='auth/provider-already-linked'?'이미 인증된 계정이에요':e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':e.code==='auth/too-many-requests'?'요청이 너무 많아요 · 잠시 후 다시 해 주세요':e.code==='auth/invalid-phone-number'?'휴대폰 번호를 확인해 주세요':'문자를 보내지 못했어요 ('+(e.code||'오류')+')');try{RCV&&RCV.clear()}catch(_){}RCV=null}
     finally{setTimeout(()=>{el.disabled=false},3000)}},
   async approve2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;const sel=$('#ap-'+v),cid=$('#apc-'+v);let sid=sel?sel.value:'';
     if(!sid){toast('연결할 학생을 골라 주세요');return}
@@ -1566,11 +1566,10 @@ Object.assign(SUB,{
   async profile(f,fd){
     if(!CONF){toast('먼저 인증번호를 받아 주세요');return}
     if(!/^\d{6}$/.test(String(fd.code||'').trim())){toast('인증번호 6자리를 넣어 주세요');return}
-    if(fd.want==='parent'&&!String(fd.child||'').trim()){toast('학생(자녀) 이름을 넣어 주세요');return}
     const b=f.querySelector('button.btn:not(.line)');b.disabled=true;
     try{await CONF.confirm(String(fd.code).trim())}catch(e){b.disabled=false;toast(e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':'인증번호가 맞지 않아요');return}
     try{const u=AUTH.currentUser;const prov=(u.providerData||[]).map(p=>p.providerId).filter(p=>p!=='phone')[0]||(u.uid.startsWith('kakao:')?'kakao':u.uid.startsWith('naver:')?'naver':'');
-      const doc={role:'pending',status:'pending',want:fd.want,name:fd.name.trim(),child:(fd.child||'').trim(),school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
+      const sn=fd.name.trim();const doc={role:'pending',status:'pending',want:fd.want,name:fd.want==='parent'?sn+' 학부모':sn,child:sn,school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
       await DB.collection('users').doc(u.uid).set(doc);ME={uid:u.uid,...doc};$('#modal').innerHTML='';render();pendingModal()}
     catch(e){console.error(e);b.disabled=false;toast('가입 신청을 저장하지 못했어요')}},
 });
