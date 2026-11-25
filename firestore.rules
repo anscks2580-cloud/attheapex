@@ -6,7 +6,7 @@ service cloud.firestore {
     function hasMe() { return signed() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
     function isAdmin() { return signed() && (request.auth.token.email == 'admin@attheapex.co.kr' || (hasMe() && me().role == 'admin' && me().active != false)); }
     function isStaff() { return isAdmin() || (hasMe() && me().role == 'teacher' && me().active != false); }
-    function isMember() { return hasMe() && me().active != false; }
+    function isMember() { return hasMe() && me().active != false && me().role in ['student', 'parent', 'teacher', 'admin']; }
     function mySid() { return me().sid; }
     function ownRead() { return isMember() && resource.data.sid == mySid(); }
     function ownWrite() { return isMember() && request.resource.data.sid == mySid(); }
@@ -16,6 +16,7 @@ service cloud.firestore {
       allow read: if signed() && (request.auth.uid == uid || isAdmin());
       allow write: if isAdmin();
       allow update: if signed() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChange']) && request.resource.data.mustChange == false;
+      allow create: if signed() && request.auth.uid == uid && request.resource.data.role == 'pending' && request.resource.data.status == 'pending' && request.resource.data.active == true;
     }
     // 학생 · 학부모 비밀번호 (관리부만 열람)
     match /secrets/{uid} {
