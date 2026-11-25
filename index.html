@@ -1358,7 +1358,7 @@ function openPlayer(vid){
   }).catch(()=>toast('영상 플레이어를 불러오지 못했어요'));
 }
 Object.assign(ACT,{
-  login(){modal(`<div style="max-width:360px;margin:0 auto"><img src="img/mark-black.png" alt="" style="height:44px;display:block;margin:4px auto 10px"><h3 style="text-align:center">로그인</h3><form data-form="login"><div class="f"><label>아이디</label><input name="id" required autocomplete="username" autocapitalize="off"></div><div class="f"><label>비밀번호</label><input type="password" name="pw" required autocomplete="current-password"></div><button class="btn" style="width:100%;padding:12px">로그인</button></form><p class="muted" style="text-align:center;margin-top:12px">학생 아이디는 이름이에요 · 처음 비밀번호는 0000</p></div>`)},
+  login(){modal(`<div style="max-width:360px;margin:0 auto"><img src="img/mark-black.png" alt="" style="height:44px;display:block;margin:4px auto 10px"><h3 style="text-align:center">로그인</h3><form data-form="login"><div class="f"><label>아이디</label><input name="id" required autocomplete="username" autocapitalize="off"></div><div class="f"><label>비밀번호</label><input type="password" name="pw" required autocomplete="current-password"></div><button class="btn" style="width:100%;padding:12px">로그인</button></form></div>`)},
   logout(){AUTH.signOut().then(()=>toast('로그아웃했어요'))},
   mypage(){if(ME)ACT.role(ME.role);else ACT.login()},
   pwchange(){modal(`<h3>비밀번호 변경</h3><form data-form="pw"><div class="f"><label>새 비밀번호</label><input type="password" name="pw" required minlength="4" autocomplete="new-password"></div><div class="f"><label>새 비밀번호 확인</label><input type="password" name="pw2" required minlength="4" autocomplete="new-password"></div><button class="btn">바꾸기</button></form>`)},
