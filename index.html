@@ -387,6 +387,27 @@ body.has-phone #toast{bottom:auto;top:calc(var(--bar-h) + var(--top-h) + 14px)}
 .tm figcaption b{font-family:var(--hp-display);font-size:19px;letter-spacing:-.3px}
 .tm figcaption span{font-size:13px;font-weight:700;color:var(--hp-strong)}
 @media(max-width:1000px){.team-g{grid-template-columns:repeat(2,1fr);gap:12px}.team{padding:40px 0 44px}.tm figcaption b{font-size:17px}}
+.hA .hA-in{grid-template-columns:1fr 1.15fr;padding-top:44px;padding-bottom:28px}
+.hteam-h{font-size:12px;letter-spacing:2px;color:var(--hp-acc);font-weight:700;margin-bottom:10px}
+.hteam-g{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.hteam .tm img{aspect-ratio:6/5;object-position:50% 14%}
+.hteam .tm figcaption{padding:9px 12px 10px}
+.hteam .tm figcaption b{font-size:16px}
+.qrow-w{position:relative;padding-bottom:40px}
+.qrow{display:grid;grid-template-columns:repeat(4,1fr)}
+.qrow button{border-top:0;border-left:1px solid rgba(255,255,255,.1)}
+.qrow button:first-child{border-left:0}
+@media(max-width:900px){
+  .hA .hA-in{grid-template-columns:1fr;gap:22px;padding-top:30px;padding-bottom:18px}
+  .hA h1{font-size:30px}.hA .sub{margin-top:12px;font-size:14px}.hA .kick{margin-bottom:12px}
+  .hteam-g{grid-template-columns:repeat(4,1fr);gap:6px}
+  .hteam .tm img{aspect-ratio:3/4;object-position:50% 10%}
+  .hteam .tm figcaption{padding:6px 4px 7px;flex-direction:column;align-items:center;gap:0}
+  .hteam .tm figcaption b{font-size:13px}.hteam .tm figcaption span{font-size:11px}
+  .qrow{grid-template-columns:repeat(2,1fr)}
+  .qrow button{border-left:0;border-top:1px solid rgba(255,255,255,.1)}
+  .qrow small{display:none}
+}
 .steps4{grid-template-columns:repeat(4,1fr)}
 @media(max-width:1000px){.steps4{grid-template-columns:repeat(2,1fr)}}
 .hp-form{max-width:640px;background:#fff;border:1.5px solid var(--hp-line);border-radius:var(--hp-r);padding:26px}
@@ -888,9 +909,12 @@ function viewHome(){
   const head=`<header class="hp-head"><div class="hp-wrap hp-bar"><button class="hp-logo" data-act="scrollto" data-v="hpTop"><img src="img/mark-black.png" alt=""><b>${NAME}</b></button><nav class="hp-nav">${nav}</nav>${login}</div></header>`;
   const cta=`<div class="cta"><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
   const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
+  const TEAM=`<figure class="tm"><img src="img/t-kmj.jpg" alt="김민정 원장"><figcaption><b>김민정</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bsa.jpg" alt="백선애 원장"><figcaption><b>백선애</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bjy.jpg" alt="백지연 선생님"><figcaption><b>백지연</b><span>선생님</span></figcaption></figure><figure class="tm"><img src="img/t-kbk.jpg" alt="김보경 선생님"><figcaption><b>김보경</b><span>선생님</span></figcaption></figure>`;
+  const TEAMSEC=`<section class="team" id="team"><div class="hp-wrap"><h2 class="hp-h2">에이펙스 강사진</h2><p class="tsub">정상(APEX)까지, 한 걸음씩 함께 가는 선생님들</p><div class="team-g">${TEAM}</div></div></section>`;
   let hero;
   if(V==='A')hero=`<section class="hA" id="hpTop">${chalk()}<div class="hp-wrap hA-in"><div><span class="kick">기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}</div>
-    <div class="quick"><div class="quick-h">바로가기</div>${Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}"><b>${q[0]}</b><small>${esc(q[1])}</small><span class="arr">→</span></button>`).join('')}</div></div></section>`;
+    <div class="hteam"><div class="hteam-h">에이펙스 강사진</div><div class="hteam-g">${TEAM}</div></div></div>
+    <div class="hp-wrap qrow-w"><div class="quick qrow">${Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}"><b>${q[0]}</b><small>${esc(q[1])}</small><span class="arr">→</span></button>`).join('')}</div></div></section>`;
   else if(V==='B')hero=`<section class="hB" id="hpTop"><div class="hp-wrap"><span class="tag"><i></i>기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em><span>${NAME}</span></em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}
     <div class="tiles">${Q.map(q=>`<button class="tile" data-act="${q[2]}" data-v="${q[3]}"><svg viewBox="0 0 24 24">${q[4]}</svg><b>${q[0]}</b><small>${esc(q[1])}</small></button>`).join('')}</div></div></section>`;
   else hero=`<div class="hp-wrap" id="hpTop"><section class="hC"><div class="tx"><span class="k">기본이 단단해지면 성적은 따라옵니다.</span><h1>끝까지 책임지는 영어<em>${NAME}</em></h1><p class="sub">중등 문법부터 고등 수능·내신까지, 수업·복습·관리를 한 번에.</p>${cta}</div>
@@ -901,7 +925,7 @@ function viewHome(){
   const W=['Grammar','Reading','Blank','Text'];
   const courses=st.classes.map((c,i)=>{const n=st.videos.filter(v=>v.classIds.includes(c.id)&&!v.teacherOnly).length;return `<button class="course" data-act="hpvideo"><div class="th" style="background:${GR[i%4]}"><span class="bd">${c.name.slice(0,2)}</span><div class="t">${esc(c.name)}</div><span class="w">${W[i%4]}</span></div><div class="bd2"><b>${esc(c.name)}</b><small>${esc(tch(c.tid).name)} · ${n}강</small></div></button>`}).join('');
   const body=`
-  <section class="team" id="team"><div class="hp-wrap"><h2 class="hp-h2">에이펙스 강사진</h2><p class="tsub">정상(APEX)까지, 한 걸음씩 함께 가는 선생님들</p><div class="team-g"><figure class="tm"><img src="img/t-kmj.jpg" alt="김민정 원장" loading="lazy"><figcaption><b>김민정</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bsa.jpg" alt="백선애 원장" loading="lazy"><figcaption><b>백선애</b><span>원장</span></figcaption></figure><figure class="tm"><img src="img/t-bjy.jpg" alt="백지연 선생님" loading="lazy"><figcaption><b>백지연</b><span>선생님</span></figcaption></figure><figure class="tm"><img src="img/t-kbk.jpg" alt="김보경 선생님" loading="lazy"><figcaption><b>김보경</b><span>선생님</span></figcaption></figure></div></div></section>
+  ${V==='A'?'':TEAMSEC}
   <section class="hp-sec consult-top" id="consultSec"><div class="hp-wrap"><div class="hp-two">
     <div><h2 class="hp-h2">상담 신청</h2>
     <form class="hp-form" data-form="consult"><div class="grid g2"><div class="f"><label>학생 이름</label><input name="name" required placeholder="홍길동"></div><div class="f"><label>연락처</label><input name="phone" required placeholder="010-0000-0000"></div></div>
