@@ -1500,7 +1500,8 @@ function forcePw(){modal(`<div style="max-width:380px;margin:0 auto"><h3>비밀�
 const SNS_CFG={kakao:'9811bb1819791739e5f82390483586ed',naver:'rK1eBgZSLpWhGM920Jcu'};
 const SITE_URL=location.origin+'/';
 const telE164=v=>{const d=String(v||'').replace(/[^0-9]/g,'');return d.startsWith('0')?'+82'+d.slice(1):'+'+d};
-let RCV=null,CONF=null;
+let RCV=null,CONF=null,CONF_PH='';
+function phoneApp(){return firebase.apps.find(a=>a.name==='phonev')||firebase.initializeApp(FB_CFG,'phonev')}
 function snsButtons(){return `<div class="sns">
   <button type="button" class="sns-k" data-act="snsin" data-v="kakao"><b>K</b>카카오로 시작하기</button>
   <button type="button" class="sns-n" data-act="snsin" data-v="naver"><b>N</b>네이버로 시작하기</button>
@@ -1543,8 +1544,8 @@ Object.assign(ACT,{
     location.href=u},
   async smssend(v,el){const f=el.closest('form'),ph=f.phone.value.trim();if(ph.replace(/[^0-9]/g,'').length<10){toast('휴대폰 번호를 확인해 주세요');return}
     el.disabled=true;
-    try{if(!RCV){RCV=new firebase.auth.RecaptchaVerifier('rcv',{size:'invisible'})}
-      CONF=await AUTH.currentUser.linkWithPhoneNumber(telE164(ph),RCV);toast('인증번호를 보냈어요');el.textContent='다시 받기';f.code.focus()}
+    try{const pa=phoneApp();if(!RCV){RCV=new firebase.auth.RecaptchaVerifier('rcv',{size:'invisible'},pa)}
+      CONF=await pa.auth().signInWithPhoneNumber(telE164(ph),RCV);CONF_PH=normPhone(ph);toast('인증번호를 보냈어요 · 가장 마지막에 받은 번호를 넣어 주세요');el.textContent='다시 받기';f.code.focus()}
     catch(e){console.error(e);toast(e.code==='auth/provider-already-linked'?'이미 인증된 계정이에요':e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':e.code==='auth/too-many-requests'?'요청이 너무 많아요 · 잠시 후 다시 해 주세요':e.code==='auth/invalid-phone-number'?'휴대폰 번호를 확인해 주세요':'문자를 보내지 못했어요 ('+(e.code||'오류')+')');try{RCV&&RCV.clear()}catch(_){}RCV=null}
     finally{setTimeout(()=>{el.disabled=false},3000)}},
   async approve2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u)return;const sel=$('#ap-'+v),cid=$('#apc-'+v);let sid=sel?sel.value:'';
@@ -1567,9 +1568,10 @@ Object.assign(SUB,{
     if(!CONF){toast('먼저 인증번호를 받아 주세요');return}
     if(!/^\d{6}$/.test(String(fd.code||'').trim())){toast('인증번호 6자리를 넣어 주세요');return}
     const b=f.querySelector('button.btn:not(.line)');b.disabled=true;
-    try{await CONF.confirm(String(fd.code).trim())}catch(e){b.disabled=false;toast(e.code==='auth/credential-already-in-use'?'이미 다른 계정에 등록된 번호예요':'인증번호가 맞지 않아요');return}
+    if(CONF_PH&&normPhone(fd.phone)!==CONF_PH){b.disabled=false;toast('인증받은 번호와 입력한 번호가 달라요');return}
+    try{await CONF.confirm(String(fd.code).trim());await phoneApp().auth().signOut()}catch(e){b.disabled=false;toast(e.code==='auth/code-expired'?'인증번호 시간이 지났어요 · 다시 받아 주세요':e.code==='auth/invalid-verification-code'?'인증번호가 맞지 않아요 · 가장 마지막에 받은 번호를 넣어 주세요':'인증하지 못했어요 ('+(e.code||'오류')+')');return}
     try{const u=AUTH.currentUser;const prov=(u.providerData||[]).map(p=>p.providerId).filter(p=>p!=='phone')[0]||(u.uid.startsWith('kakao:')?'kakao':u.uid.startsWith('naver:')?'naver':'');
-      const sn=fd.name.trim();const doc={role:'pending',status:'pending',want:fd.want,name:fd.want==='parent'?sn+' 학부모':sn,child:sn,school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
+      const sn=fd.name.trim();const doc={role:'pending',status:'pending',want:fd.want,name:fd.want==='parent'?sn+' 학부모':sn,child:sn,school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),phoneOk:true,via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
       await DB.collection('users').doc(u.uid).set(doc);ME={uid:u.uid,...doc};$('#modal').innerHTML='';render();pendingModal()}
     catch(e){console.error(e);b.disabled=false;toast('가입 신청을 저장하지 못했어요')}},
 });
