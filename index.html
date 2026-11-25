@@ -1434,7 +1434,7 @@ function vAstudents(){
     <td style="white-space:nowrap">${u?`<button class="btn sm" data-act="pwset" data-v="${u.id}">저장</button> <button class="btn sm line" data-act="pwreset" data-v="${u.id}">재설정</button> `:''}<button class="btn sm line" data-act="leave" data-v="${s.id}">${s.active?'퇴원':'복귀'}</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">등록된 학생이 없어요</td></tr>'}</table></div>`;
 }
 function newCode(){let code;do{code=String(1000+Math.floor(Math.random()*9000))}while(st.students.some(s=>s.code===code));return code}
-const normPhone=v=>String(v==null?'':v).replace(/[^0-9]/g,'').replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3');
+const normPhone=v=>{let d=String(v==null?'':v).replace(/[^0-9]/g,'');if(/^1\d{8,9}$/.test(d))d='0'+d;return d.replace(/^(01\d)(\d{3,4})(\d{4})$/,'$1-$2-$3').replace(/^(02)(\d{3,4})(\d{4})$/,'$1-$2-$3').replace(/^(0\d{2})(\d{3,4})(\d{4})$/,'$1-$2-$3')};
 async function importRows(rows){
   const P=t=>{const e=$('#xlprog');if(e)e.textContent=t};
   let made=0,skip=0,fail=[];
@@ -1454,7 +1454,7 @@ async function importRows(rows){
 }
 Object.assign(ACT,{
   async xltpl(){try{await loadXLSX()}catch(e){toast('엑셀 도구를 불러오지 못했어요');return}
-    const ws=XLSX.utils.aoa_to_sheet([COLS,['홍길동','중2','평촌중','중2 문법반','010-1234-5678','010-9876-5432']]);ws['!cols']=COLS.map(()=>({wch:16}));
+    const ws=XLSX.utils.aoa_to_sheet([COLS,['홍길동','중2','평촌중','중2 문법반','01012345678','01098765432']]);ws['!cols']=COLS.map(()=>({wch:16}));for(let r=1;r<=300;r++)['E','F'].forEach(c=>{const k=c+(r+1);ws[k]=ws[k]||{t:'s',v:''};ws[k].t='s';ws[k].z='@'});ws['!ref']='A1:F301';
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'학생 명단');XLSX.writeFile(wb,'에이펙스_학생명단_양식.xlsx')},
   async mkacc(v){const s=st.students.find(x=>x.id===v);if(!s)return;try{const id=await makeStudentAccount(s);render();toast(`${s.name} 계정 · 아이디 ${id} · 비밀번호 0000`)}catch(e){console.error(e);toast('계정을 만들지 못했어요')}},
   async pwset(v){const el=$('#pw-'+v),pw=el?el.value.trim():'';if(pw.length<4){toast('비밀번호는 4자 이상으로 넣어 주세요');return}
