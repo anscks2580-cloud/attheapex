@@ -559,6 +559,9 @@ body.th-A .stat{border-top:3px solid var(--gold)}
 .hp-map .addr{margin:12px 0 4px;font-weight:700}
 .hp-map a{color:var(--hp-strong);font-weight:700;font-size:13.5px;text-decoration:none}
 .consult-top{padding-top:44px}
+.hp-login.hp-join{background:transparent!important;color:var(--hp-ink,#1f2a24)!important;border:1.5px solid currentColor!important}
+.hp-auth{display:flex;gap:6px;margin-left:auto;flex-shrink:0}.hp-auth .hp-login{margin-left:0!important}
+@media(max-width:600px){.hp-login{padding:7px 10px!important;font-size:12.5px!important}.hp-logo{font-size:15px!important;gap:6px!important}.hp-logo img{height:30px!important}}
 .sns{display:grid;gap:8px;margin-top:6px}
 .sns button{display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:8px;padding:12px;font-weight:700;font-size:14.5px;cursor:pointer}
 .sns button b{font-family:Arial,sans-serif;font-weight:900;font-size:15px}
@@ -867,7 +870,7 @@ function viewHome(){
     ['공지사항',(st.popup.on&&st.popup.title?st.popup.title:(st.notices[0]?st.notices[0].title:'학원 소식'))+' 안내','scrollto','notice','<path d="M4 10v4h3l5 4V6L7 10H4zM16 9a4 4 0 0 1 0 6"/>'],
     ['상담신청','남겨 주시면 바로 연락드립니다','scrollto','consultSec','<path d="M4 5h16v11H8l-4 4zM9 10h6"/>']];
   const nav=Q.map(q=>`<button data-act="${q[2]}" data-v="${q[3]}">${q[0]}</button>`).join('');
-  const login=`<button class="hp-login" data-act="hpvideo">${ME?'내 페이지':'로그인'}</button>`;
+  const login=`<span class="hp-auth">${ME?'':'<button class="hp-login hp-join" data-act="signup">회원가입</button>'}<button class="hp-login" data-act="hpvideo">${ME?'내 페이지':'로그인'}</button></span>`;
   const head=`<header class="hp-head"><div class="hp-wrap hp-bar"><button class="hp-logo" data-act="scrollto" data-v="hpTop"><img src="img/mark-black.png" alt=""><b>${NAME}</b></button><nav class="hp-nav">${nav}</nav>${login}</div></header>`;
   const cta=`<div class="cta"><button class="hp-btn gh" data-act="scrollto" data-v="consultSec">${V==='B'?'상담 신청하기':'상담 신청'}</button>${appOn()?'<button class="hp-btn gh" data-act="install">📲 앱 설치</button>':''}</div>`;
   const notices=[...(st.popup.on?[{title:st.popup.title,text:st.popup.text,date:TODAY}]:[]),...st.notices].slice(0,5);
