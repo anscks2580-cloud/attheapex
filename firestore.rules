@@ -23,6 +23,12 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if isAdmin() || (signed() && request.auth.uid == uid);
     }
+    // 휴대폰 번호 중복 가입 막기 (번호당 한 계정)
+    match /phones/{p} {
+      allow create: if signed() && request.resource.data.uid == request.auth.uid;
+      allow update: if signed() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if isAdmin();
+    }
     // 홈페이지에 보이는 정보
     match /classes/{id}  { allow read: if true; allow write: if isAdmin(); }
     match /teachers/{id} { allow read: if true; allow write: if isAdmin(); }

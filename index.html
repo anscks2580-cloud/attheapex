@@ -1470,7 +1470,7 @@ Object.assign(ACT,{
     const accs=(st.users||[]).filter(u=>u.sid===v);
     for(const u of accs){const pw=SECRETS[u.id]&&SECRETS[u.id].pw;
       if(pw!=null){try{const a=makerAuth();await a.setPersistence(firebase.auth.Auth.Persistence.NONE);const c=await signInAny(a,u.loginId,pw);await c.user.delete();await a.signOut()}catch(err){console.warn('계정 삭제',err)}}
-      await DB.collection('secrets').doc(u.id).delete().catch(()=>{});await DB.collection('users').doc(u.id).delete().catch(()=>{});}
+      await DB.collection('secrets').doc(u.id).delete().catch(()=>{});if(u.phone)await DB.collection('phones').doc(String(u.phone).replace(/[^0-9]/g,'')).delete().catch(()=>{});await DB.collection('users').doc(u.id).delete().catch(()=>{});}
     Object.keys(st.progress).forEach(k=>{if(k.startsWith(v+'|'))delete st.progress[k]});
     Object.values(st.attendance).forEach(m=>{if(m)delete m[v]});
     st.reports=st.reports.filter(r=>r.sid!==v);st.absences=st.absences.filter(a=>a.sid!==v);
@@ -1519,7 +1519,7 @@ function profileModal(){const u=AUTH.currentUser;const nm=(u&&u.displayName)||''
    <div class="f"><label>구분</label><div class="row" style="gap:16px"><label class="row" style="gap:5px"><input type="radio" name="want" value="student" checked onchange="document.getElementById('pf-nl').textContent='학생 이름'"> 학생</label><label class="row" style="gap:5px"><input type="radio" name="want" value="parent" onchange="document.getElementById('pf-nl').textContent='자녀(학생) 이름'"> 학부모</label></div></div>
    <div class="f"><label id="pf-nl">학생 이름</label><input name="name" required value="${esc(nm)}"></div>
    <div class="grid g2"><div class="f"><label>학교</label><input name="school" required placeholder="예) 평촌중"></div><div class="f"><label>학년</label><select name="grade">${['초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'].map(g=>`<option>${g}</option>`).join('')}</select></div></div>
-   <div class="f"><label>휴대폰 번호</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input name="phone" required placeholder="010-0000-0000" inputmode="tel" style="flex:1"><button type="button" class="btn line" data-act="smssend" style="white-space:nowrap">인증번호 받기</button></div></div>
+   <div class="f"><label>휴대폰 번호 (본인 번호)</label><div class="row" style="gap:6px;flex-wrap:nowrap"><input name="phone" required placeholder="010-0000-0000" inputmode="tel" style="flex:1"><button type="button" class="btn line" data-act="smssend" style="white-space:nowrap">인증번호 받기</button></div></div>
    <div class="f"><label>인증번호</label><input name="code" inputmode="numeric" placeholder="문자로 받은 6자리" autocomplete="one-time-code"></div>
    <div id="rcv"></div>
    <button class="btn" style="width:100%;padding:12px">가입 신청</button></form>
@@ -1556,7 +1556,7 @@ Object.assign(ACT,{
       else{const s=st.students.find(x=>x.id===sid);if(s&&u.phone){if(u.want==='parent'&&!s.pphone)s.pphone=u.phone;if(u.want==='student'&&!s.phone)s.phone=u.phone;save()}}
       await DB.collection('users').doc(v).update({role:u.want,sid,status:'ok',approved:Date.now()});toast(`${u.name} 승인 · ${stu(sid).name} 학생과 연결했어요`)}
     catch(e){console.error(e);toast('승인하지 못했어요')}},
-  async reject2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u||!confirm(u.name+' 가입 신청을 거절할까요?'))return;try{await DB.collection('users').doc(v).update({status:'rejected',active:false});toast('거절했어요')}catch(e){toast('처리하지 못했어요')}},
+  async reject2(v){const u=(st.users||[]).find(x=>x.id===v);if(!u||!confirm(u.name+' 가입 신청을 거절할까요?'))return;try{await DB.collection('users').doc(v).update({status:'rejected',active:false});if(u.phone)await DB.collection('phones').doc(u.phone.replace(/[^0-9]/g,'')).delete().catch(()=>{});toast('거절했어요')}catch(e){toast('처리하지 못했어요')}},
 });
 Object.assign(SUB,{
   async signup(f,fd){const id=String(fd.id||'').trim().toLowerCase();if(!/^[a-z0-9._-]{3,30}$/.test(id)){toast('아이디는 영문 · 숫자 3자 이상이에요');return}
@@ -1570,6 +1570,8 @@ Object.assign(SUB,{
     const b=f.querySelector('button.btn:not(.line)');b.disabled=true;
     if(CONF_PH&&normPhone(fd.phone)!==CONF_PH){b.disabled=false;toast('인증받은 번호와 입력한 번호가 달라요');return}
     try{await CONF.confirm(String(fd.code).trim());await phoneApp().auth().signOut()}catch(e){b.disabled=false;toast(e.code==='auth/code-expired'?'인증번호 시간이 지났어요 · 다시 받아 주세요':e.code==='auth/invalid-verification-code'?'인증번호가 맞지 않아요 · 가장 마지막에 받은 번호를 넣어 주세요':'인증하지 못했어요 ('+(e.code||'오류')+')');return}
+    const pd=normPhone(fd.phone).replace(/[^0-9]/g,'');
+    try{await DB.collection('phones').doc(pd).set({uid:AUTH.currentUser.uid,ts:Date.now()})}catch(e){b.disabled=false;toast('이미 가입된 휴대폰 번호예요 · 본인 번호로 가입해 주세요');return}
     try{const u=AUTH.currentUser;const prov=(u.providerData||[]).map(p=>p.providerId).filter(p=>p!=='phone')[0]||(u.uid.startsWith('kakao:')?'kakao':u.uid.startsWith('naver:')?'naver':'');
       const sn=fd.name.trim();const doc={role:'pending',status:'pending',want:fd.want,name:fd.want==='parent'?sn+' 학부모':sn,child:sn,school:fd.school.trim(),grade:fd.grade,phone:normPhone(fd.phone),phoneOk:true,via:prov==='password'?'아이디':prov==='google.com'?'구글':prov,loginId:PEND_LOGIN_ID||(u.email&&u.email.endsWith('@'+ID_DOMAIN)?u.email.split('@')[0]:''),active:true,created:Date.now()};
       await DB.collection('users').doc(u.uid).set(doc);ME={uid:u.uid,...doc};$('#modal').innerHTML='';render();pendingModal()}
